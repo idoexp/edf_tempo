@@ -1,0 +1,2 @@
+# jeedom
+Jeedom Plugins
