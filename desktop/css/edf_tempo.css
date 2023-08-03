@@ -1,0 +1,65 @@
+.blocJour{
+  display:inline-block;
+  margin:8px 0;
+}
+
+.blocJour span{
+  min-width:40px; 
+  min-height:20px;
+  margin:8px;
+}
+.couleurJ{
+  display:block;
+  width:20px; 
+  height:20px;
+  border-radius:50%;
+  background-color:grey;
+  margin:4px;
+}
+
+
+.couleurJsm{
+  display:inline-block;
+  width:10px; 
+  height:10px;
+  border-radius:50%;
+  background-color:grey;
+  margin:4px;
+  position:absolute;
+  left:-20px;
+  top:6px;
+}
+
+.color_TEMPO_BLEU{
+  background-color: #3997d3 !important;
+}
+
+.color_TEMPO_BLANC{
+  background-color: #ecf0f1 !important;
+}
+
+.color_TEMPO_ROUGE{
+  background-color: #e84b3c !important;
+}          
+
+.ligneEdf{
+  line-height:16px;
+  text-align:right;
+  display:block;
+  width:100%;
+  position:relative;
+}
+
+.blockContent{
+  display:block;
+  width:60px;
+  margin : 0 16px;
+  white-space: nowrap;
+}
+
+.prixEDF{
+  font-size:8px !important;
+  line-height:10px;
+  text-align:center;
+  width:70px;
+}
