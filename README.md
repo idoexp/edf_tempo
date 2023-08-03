@@ -8,6 +8,7 @@ Compatible pour **Jeedom** 4.2
 # Installation du plugin
 
 Utilisez le market de **Jeedom** pour télécharger et installer le plugins.
+Ou téléchargez le zip, et copier son contenue dans le dossier **/var/www/html/plugins/edf_tempo** de votre machine (sous linux)
 
 # Activation du plugin
 
