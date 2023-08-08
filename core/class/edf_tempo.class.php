@@ -397,7 +397,8 @@ class edf_tempoCmd extends cmd {
         case 'refresh': 
           log::add('edf_tempo', 'info', "Mise à jour forcée le ".date("m-d-Y à H:i"));
           $eqlogic->updateEDFTempoInfos($eqlogic);
-          $eqlogic->checkAndUpdateCmd('edf_lastupdate', "Forcée le ".date("m-d-Y à H:i"));      
+          $eqlogic->checkAndUpdateCmd('edf_lastupdate', "Forcée le ".date("m-d-Y à H:i")); 
+          $eqlogic->refreshWidget();      
         break;
       }
   }
