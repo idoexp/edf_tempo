@@ -21,8 +21,8 @@ Ou téléchargez le zip, et copier son contenue dans le dossier **/var/www/html/
 * Nommez l'équipement, par exeple **EDF Tempo** et faite **ok**
 
 L'équipement est créé et actif, il vous reste plus qu'à le positionner dans votre environnement, par défaut il est dans la rubrique **aucun**
-Le site d'EDF est mis à jours tous les jours vers 11h. Il y a donc une tâche planifié qui vérifie tous les jours à 11h06 le status du jour.
+Le site d'EDF est mis à jours tous les jours vers 11h. Il y a donc une tâche planifié qui vérifie tous les jours entre 11h et 12h05 le status du jour, une erreur est généré si à 12h05 il n'y a toujours aucune donnée.
 Si vous voulez planifiez des scénarios en fonction de la couleur du jour (par exemple une alerte mail) faite le après 11h06 de manière à avoir la dernière information.
 
 # changelog
-* Mise à jour le 3 août 2023.
+* Mise à jour le 11 août 2023.
