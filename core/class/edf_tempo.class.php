@@ -150,11 +150,11 @@ class edf_tempo extends eqLogic {
 
   // Fonction exécutée automatiquement après la création de l'équipement
   public function postInsert() {
-    // log::add('edf_tempo', 'info', "Mise à jour de l'autorefresh de l'équipement.");
+    log::add('edf_tempo', 'info', "Mise à jour de l'autorefresh de l'équipement.");
     // $this->setConfiguration('autorefresh', '6 11 * * *');
-    // $this->setIsEnable(1);
-    // $this->setIsVisible(1);
-    // $this->save();
+    $this->setIsEnable(1);
+    $this->setIsVisible(1);
+    $this->save();
   }
 
   // Fonction exécutée automatiquement avant la mise à jour de l'équipement
