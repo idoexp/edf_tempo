@@ -41,14 +41,36 @@ class edf_tempo extends eqLogic {
       $eqLogics = array(self::byId($_eqLogic_id));
     }
 
-    foreach ($eqLogics as $edf_tempo) {
-      try {
-        $cronExpression = $edf_tempo->getConfiguration('autorefresh');
-        if (self::isCronTimeToRun($cronExpression)) {
-          self::updateEDFTempoInfos($edf_tempo);
+    $heureStart = 11;
+    $heureEnd   = 12;
+
+    $heure    = date("G");
+    $minutes  = date("i");
+
+    if ($heure >= $heureStart && $heure <= $heureEnd && $minutes <= 5 || $heure == 0 && $minutes <= 2){
+      foreach ($eqLogics as $edf_tempo) {
+        try {
+            if ($heure == 0 && $minutes = 2){
+              $edf_tempo->checkAndUpdateCmd('edf_status', "NOK");
+            }
+
+            $cmd = $edf_tempo->getCmd(null,'edf_status');
+            if(is_object($cmd)){
+              $edf_status = $cmd->execCmd();
+              if ($edf_status != "OK"){
+                self::updateEDFTempoInfos($edf_tempo);
+              }
+              if ($heure == $heureEnd && $edf_status !="OK"){
+                log::add('edf_tempo', 'error', "Impossible de récupérer la couleur des jours depuis 11h du matin.");
+              }
+            }
+
+          // $cronExpression = $edf_tempo->getConfiguration('autorefresh');
+          // if (self::isCronTimeToRun($cronExpression)) {
+          // }
+        } catch (Exception $e) {
+          log::add('edf_tempo', 'info', $e->getMessage());
         }
-      } catch (Exception $e) {
-        log::add('edf_tempo', 'info', $e->getMessage());
       }
     }
 
@@ -106,7 +128,18 @@ class edf_tempo extends eqLogic {
     } else {
       $eqLogics = array(self::byId($_eqLogic_id));
     }
-    self::updateEDFTempoInfos($edf_tempo);
+
+    foreach ($eqLogics as $edf_tempo) {
+      try {
+        $edf_tempo->checkAndUpdateCmd('edf_status', "NOK");
+        $cronExpression = $edf_tempo->getConfiguration('autorefresh');
+        if (self::isCronTimeToRun($cronExpression)) {
+          self::updateEDFTempoInfos($edf_tempo);
+        }
+      } catch (Exception $e) {
+        log::add('edf_tempo', 'info', $e->getMessage());
+      }
+    }
   }
 
   /*     * *********************Méthodes d'instance************************* */
@@ -117,11 +150,11 @@ class edf_tempo extends eqLogic {
 
   // Fonction exécutée automatiquement après la création de l'équipement
   public function postInsert() {
-    log::add('edf_tempo', 'info', "Mise à jour de l'autorefresh de l'équipement.");
-    $this->setConfiguration('autorefresh', '6 11 * * *');
-    $this->setIsEnable(1);
-    $this->setIsVisible(1);
-    $this->save();
+    // log::add('edf_tempo', 'info', "Mise à jour de l'autorefresh de l'équipement.");
+    // $this->setConfiguration('autorefresh', '6 11 * * *');
+    // $this->setIsEnable(1);
+    // $this->setIsVisible(1);
+    // $this->save();
   }
 
   // Fonction exécutée automatiquement avant la mise à jour de l'équipement
@@ -138,7 +171,6 @@ class edf_tempo extends eqLogic {
 
   // Fonction exécutée automatiquement après la sauvegarde (création ou mise à jour) de l'équipement
   public function postSave() {
-
     
     $info = $this->getCmd(null, 'edf_today');
     if (!is_object($info)) {
@@ -232,6 +264,20 @@ class edf_tempo extends eqLogic {
     $info->setOrder(1);
     $refresh->save();    
 
+
+    $info = $this->getCmd(null, 'edf_status');
+    if (!is_object($info)) {
+      $info = new edf_tempoCmd();
+      $info->setName(__("Etat de la synchronisation", __FILE__));
+    }
+    $info->setLogicalId('edf_status');
+    $info->setEqLogic_id($this->getId());
+    $info->setType('info');
+    $info->setSubType('string');
+    $info->setIsVisible(0);
+    $info->setOrder(8);
+    $info->save();
+
     $this->updateEDFTempoInfos($this); // mets à jour la tuile
   }
 
@@ -278,7 +324,7 @@ class edf_tempo extends eqLogic {
 
   /*     * **********************Getteur Setteur*************************** */
   public static function updateEDFTempoInfos($eqlogic) {
-    log::add('edf_tempo', 'info', "Récupération des données sur le site d'EDF");
+    // log::add('edf_tempo', 'info', "Récupération des données sur le site d'EDF");
     $colors   = $eqlogic->getEDFColors();
     $restant  = $eqlogic->getEDFRestant();
     $eqlogic->checkAndUpdateCmd('edf_today', $colors->couleurJourJ);
@@ -286,16 +332,25 @@ class edf_tempo extends eqLogic {
     $eqlogic->checkAndUpdateCmd('edf_nb_bleu', $restant->PARAM_NB_J_BLEU);
     $eqlogic->checkAndUpdateCmd('edf_nb_blanc', $restant->PARAM_NB_J_BLANC);          
     $eqlogic->checkAndUpdateCmd('edf_nb_rouge', $restant->PARAM_NB_J_ROUGE);          
-    $eqlogic->checkAndUpdateCmd('edf_lastupdate', date("d-m-Y à H:i"));          
+
+    if ($colors->couleurJourJ1 == "NA" || $colors->couleurJourJ1 == "NON_DEFINI" || !isset($colors->couleurJourJ1)){
+      $eqlogic->checkAndUpdateCmd('edf_status', "NOK");
+      log::add('edf_tempo', 'info', "Erreur de récupération des informations, je test un peu plus tard.");
+    }else{
+      $eqlogic->checkAndUpdateCmd('edf_lastupdate', date("d-m-Y à H:i"));          
+      $eqlogic->checkAndUpdateCmd('edf_status', "OK");
+      log::add('edf_tempo', 'info', "Mise à jour des informations d'EDF Tempo le ".date("d-m-Y à H:i"));
+    }
+
   }
 
   public function getEDFColors(){
     $urlColors = config::byKey('global_url_edf_color', 'edf_tempo').date("Y-m-d");
     $colors = $this->getJson($urlColors);
-    log::add('edf_tempo', 'info', "Récupération des couleurs : ");
-    if($colors === false){
-      $colors = json_decode('{"couleurJourJ":{"Tempo":"NA"},"couleurJourJ1":{"Tempo":"NA"}}');
-      log::add('edf_tempo', 'error', "Erreur de récupération de la couleur des jours");
+    // log::add('edf_tempo', 'info', "Récupération des couleurs : ");
+    if($colors === false || !isset($colors->couleurJourJ1) ){
+      $colors = json_decode('{"couleurJourJ":"NA","couleurJourJ1":"NA"}');
+      log::add('edf_tempo', 'info', "Erreur de récupération de la couleur des jours, je test un peu plus tard.");
     }
     return  $colors;
   }
@@ -303,10 +358,10 @@ class edf_tempo extends eqLogic {
   public function getEDFRestant(){
     $urlRestant = config::byKey('global_url_edf_restant', 'edf_tempo');
     $restant = $this->getJson($urlRestant);
-    log::add('edf_tempo', 'info', "Récupération des jours restant : ");
-    if($restant === false){
+    // log::add('edf_tempo', 'info', "Récupération des jours restant : ");
+    if($restant === false || !isset($restant->PARAM_NB_J_BLANC)){
       $restant = json_decode('{"PARAM_NB_J_BLANC":"NA","PARAM_NB_J_ROUGE":"NA","PARAM_NB_J_BLEU":"NA"}');
-      log::add('edf_tempo', 'error', "Erreur de récupération du nombres de jours restant");
+      log::add('edf_tempo', 'info', "Erreur de récupération du nombres de jours restant, je test un peu plus tard.");
     }
     return  $restant;
   }
@@ -324,7 +379,7 @@ class edf_tempo extends eqLogic {
     );
     $context  = stream_context_create($opts);
     $string   = file_get_contents($url, false, $context);
-    log::add('edf_tempo', 'info', $string);
+    // log::add('edf_tempo', 'info', $string);
     $retour   = json_decode($string);
 
     return $retour;    
@@ -397,7 +452,7 @@ class edf_tempoCmd extends cmd {
         case 'refresh': 
           log::add('edf_tempo', 'info', "Mise à jour forcée le ".date("m-d-Y à H:i"));
           $eqlogic->updateEDFTempoInfos($eqlogic);
-          $eqlogic->checkAndUpdateCmd('edf_lastupdate', "Forcée le ".date("m-d-Y à H:i")); 
+          // $eqlogic->checkAndUpdateCmd('edf_lastupdate', "Forcée le ".date("m-d-Y à H:i")); 
           $eqlogic->refreshWidget();      
         break;
       }
