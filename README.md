@@ -25,4 +25,6 @@ Le site d'EDF est mis à jours tous les jours vers 11h. Il y a donc une tâche p
 Si vous voulez planifiez des scénarios en fonction de la couleur du jour (par exemple une alerte mail) faite le après 11h06 de manière à avoir la dernière information.
 
 # changelog
-* Mise à jour le 11 août 2023.
+* Mise à jour du 12 août 2023.
+- Modification du CSS et ses alignements
+- Modification du type de requête php pour récupérer les données via cUrl ou file_get_contents pour améliorer la compatibilités des plateformes
