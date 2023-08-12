@@ -366,25 +366,49 @@ class edf_tempo extends eqLogic {
     return  $restant;
   }
 
-
   public function getJson($url){
-    $opts = array(
-      'http'=>array(
-        'method'=>"GET",
-        'header'=>array( "User-Agent: Wget/1.20.3 (linux-gnu)",
-            "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "Content-Type: application/json"
-        )
-      )
-    );
-    $context  = stream_context_create($opts);
-    $string   = file_get_contents($url, false, $context);
-    // log::add('edf_tempo', 'info', $string);
-    $retour   = json_decode($string);
+    if (function_exists('curl_init')) {
+      log::add('edf_tempo', 'debug', "fonction getJson via -> cUrl");
+      // Utiliser cURL pour récupérer les données
+      $curl           = curl_init();
+      curl_setopt($curl, CURLOPT_URL, $url);
+      curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($curl, CURLOPT_TIMEOUT,        15);
+      curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 15);
+      $data           = curl_exec($curl);
+      $httpRespCode   = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
+      log::add('edf_tempo', 'debug', "Réponse HHTP : ". $httpRespCode);
+      if ($httpRespCode == 0) {
+        log::add('edf_tempo', 'error', "Impossible de récupérer les données : ". curl_error($curl));
+        return false;
+      }
+  
+    } else {
+  
+      // Utilise file_get_contents pour récupérer les données
+      log::add('edf_tempo', 'debug', "fonction getJson via -> file_get_contents");
+      $opts = array(
+        'http'=>array(
+          'method'=>"GET",
+          'header'=>array( "User-Agent: Wget/1.20.3 (linux-gnu)",
+              "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+              "Content-Type: application/json"
+          )
+        )
+      );
+      $context  = stream_context_create($opts);
+      $data     = file_get_contents($url, false, $context);
+      if ($data === false) {
+          log::add('edf_tempo', 'error', "Impossible de récupérer les données : ". error_get_last()['message']);
+          return false;
+      }    
+    }
+
+    log::add('edf_tempo', 'debug', "Données récupérées : ". $data);
+    $retour   = json_decode($data);
     return $retour;    
   }
-
 
   public function toHtml($_version = 'dashboard') {
     $texte="";
