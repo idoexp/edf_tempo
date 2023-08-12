@@ -1,4 +1,76 @@
-.blocJour{
+* {
+  --edfBleu:#3997d3;
+  --edfBlanc:#ecf0f1;
+  --edfRouge:#e84b3c;
+}
+
+.edf_tempo {
+  display: flex;
+  flex-direction: column;
+  grid-gap: 1rem;
+  margin: 1rem;
+  box-sizing: border-box;
+  max-width: 122px;
+  min-height: 200px;
+}
+.edf_tempo .color_TEMPO_BLEU {
+  background-color: var(--edfBleu) !important;
+}
+.edf_tempo .color_TEMPO_BLANC {
+  background-color: var(--edfBlanc) !important;
+}
+.edf_tempo .color_TEMPO_ROUGE {
+  background-color: var(--edfRouge) !important;
+}
+.edf_tempo .couleurs {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  grid-gap: 1rem;
+}
+.edf_tempo .jours {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  grid-gap: 0.5rem;
+}
+.edf_tempo .jours .line {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+}
+.edf_tempo .jours .line .reste {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.edf_tempo .jours .line .reste .jr {
+  font-weight: bold;
+}
+.edf_tempo .jours .line .reste .prix {
+  font-size: 9px !important;
+  line-height: 10px;
+  text-align: center;
+  width: 70px;
+}
+.edf_tempo .largeColor {
+  content: "";
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: grey;
+  margin: 4px auto;
+}
+.edf_tempo .smallColor {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: grey;
+  margin: 4px;
+}
+/*.blocJour{
   display:inline-block;
   margin:8px 0;
 }
@@ -63,3 +135,4 @@
   text-align:center;
   width:70px;
 }
+*/
