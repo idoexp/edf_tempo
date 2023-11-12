@@ -35,11 +35,7 @@ class edf_tempo extends eqLogic {
 
   /*     * ***********************Methode static*************************** */
  public static function cron() {
-    if ($_eqLogic_id == null) {
-      $eqLogics = self::byType('edf_tempo', true);
-    } else {
-      $eqLogics = array(self::byId($_eqLogic_id));
-    }
+    $eqLogics = self::byType('edf_tempo', true);
 
     $heureStart = 11;
     $heureEnd   = 12;
