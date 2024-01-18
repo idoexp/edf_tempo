@@ -119,6 +119,7 @@ class edf_tempo extends eqLogic {
   * Fonction exécutée automatiquement tous les jours par Jeedom
   */
   public static function cronDaily() {
+    $eqLogics = self::byType('edf_tempo', true);
     foreach ($eqLogics as $edf_tempo) {
       try {
         $edf_tempo->checkAndUpdateCmd('edf_status', "NOK");
