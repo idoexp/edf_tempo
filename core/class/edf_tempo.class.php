@@ -358,7 +358,11 @@ class edf_tempo extends eqLogic {
   public function getEDFRestant(){
     $urlRestant = config::byKey('global_url_edf_restant', 'edf_tempo');
     $restant = $this->getJson($urlRestant);
+    //log::add('edf_tempo', 'debug', "resstany : ".$restant);
+    log::add('edf_tempo', 'debug', "URL ".$urlRestant);
     // log::add('edf_tempo', 'info', "Récupération des jours restant : ");
+    //log::add('edf_tempo', 'info', "Récupération des jours restant : ".$restant);
+    //log::add('edf_tempo', 'debug', "Bleu : ". $restant->PARAM_NB_J_BLEU);
     if($restant === false || !isset($restant->PARAM_NB_J_BLANC)){
       $restant = json_decode('{"PARAM_NB_J_BLANC":"NA","PARAM_NB_J_ROUGE":"NA","PARAM_NB_J_BLEU":"NA"}');
       log::add('edf_tempo', 'info', "Erreur de récupération du nombres de jours restant, je test un peu plus tard.");
@@ -366,47 +370,37 @@ class edf_tempo extends eqLogic {
     return  $restant;
   }
 
-  public function getJson($url){
+ public function getJson($url){
     if (function_exists('curl_init')) {
       log::add('edf_tempo', 'debug', "fonction getJson via -> cUrl");
-      // Utiliser cURL pour récupérer les données
-      $curl           = curl_init();
+      $curl = curl_init();
       curl_setopt($curl, CURLOPT_URL, $url);
       curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-      curl_setopt($curl, CURLOPT_TIMEOUT,        15);
+      curl_setopt($curl, CURLOPT_TIMEOUT, 15);
       curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 15);
-      $data           = curl_exec($curl);
-      $httpRespCode   = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-
-      log::add('edf_tempo', 'debug', "Réponse HHTP : ". $httpRespCode);
+      curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true); // Suivre les redirections
+      curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false); // Ne pas vérifier le certificat SSL
+      curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+        "User-Agent: Wget/1.20.3 (linux-gnu)",
+        "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Content-Type: application/json"
+      ));
+      $data = curl_exec($curl);
+      $httpRespCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+      curl_close($curl);
+  
+      log::add('edf_tempo', 'debug', "Réponse HTTP : ". $httpRespCode);
       if ($httpRespCode == 0) {
         log::add('edf_tempo', 'error', "Impossible de récupérer les données : ". curl_error($curl));
         return false;
       }
-  
     } else {
-  
-      // Utilise file_get_contents pour récupérer les données
-      log::add('edf_tempo', 'debug', "fonction getJson via -> file_get_contents");
-      $opts = array(
-        'http'=>array(
-          'method'=>"GET",
-          'header'=>array( "User-Agent: Wget/1.20.3 (linux-gnu)",
-              "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-              "Content-Type: application/json"
-          )
-        )
-      );
-      $context  = stream_context_create($opts);
-      $data     = file_get_contents($url, false, $context);
-      if ($data === false) {
-          log::add('edf_tempo', 'error', "Impossible de récupérer les données : ". error_get_last()['message']);
-          return false;
-      }    
+      log::add('edf_tempo', 'error', "cURL n'est pas disponible sur ce serveur.");
+      return false;
     }
-
+  
     log::add('edf_tempo', 'debug', "Données récupérées : ". $data);
-    $retour   = json_decode($data);
+    $retour = json_decode($data);	
     return $retour;    
   }
 
