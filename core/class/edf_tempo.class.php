@@ -35,11 +35,7 @@ class edf_tempo extends eqLogic {
 
   /*     * ***********************Methode static*************************** */
  public static function cron() {
-    if ($_eqLogic_id == null) {
-      $eqLogics = self::byType('edf_tempo', true);
-    } else {
-      $eqLogics = array(self::byId($_eqLogic_id));
-    }
+    $eqLogics = self::byType('edf_tempo', true);
 
     $heureStart = 11;
     $heureEnd   = 12;
@@ -123,11 +119,7 @@ class edf_tempo extends eqLogic {
   * Fonction exécutée automatiquement tous les jours par Jeedom
   */
   public static function cronDaily() {
-    if ($_eqLogic_id == null) {
-      $eqLogics = self::byType('edf_tempo', true);
-    } else {
-      $eqLogics = array(self::byId($_eqLogic_id));
-    }
+    $eqLogics = self::byType('edf_tempo', true);
 
     foreach ($eqLogics as $edf_tempo) {
       try {
@@ -139,6 +131,10 @@ class edf_tempo extends eqLogic {
       } catch (Exception $e) {
         log::add('edf_tempo', 'info', $e->getMessage());
       }
+    }
+    // Force la MAJ du nombre de jours bleu le 1er septembre
+    if (date('m-d') == '09-01') {
+      self::updateMaxJrBleu();
     }
   }
 
@@ -163,6 +159,10 @@ class edf_tempo extends eqLogic {
 
   // Fonction exécutée automatiquement après la mise à jour de l'équipement
   public function postUpdate() {
+
+    log::add('edf_tempo', 'debug', 'postUpdate a été déclenché.');
+    $this->updateMaxJrBleu();
+
   }
 
   // Fonction exécutée automatiquement avant la sauvegarde (création ou mise à jour) de l'équipement
@@ -358,11 +358,7 @@ class edf_tempo extends eqLogic {
   public function getEDFRestant(){
     $urlRestant = config::byKey('global_url_edf_restant', 'edf_tempo');
     $restant = $this->getJson($urlRestant);
-    //log::add('edf_tempo', 'debug', "resstany : ".$restant);
-    log::add('edf_tempo', 'debug', "URL ".$urlRestant);
     // log::add('edf_tempo', 'info', "Récupération des jours restant : ");
-    //log::add('edf_tempo', 'info', "Récupération des jours restant : ".$restant);
-    //log::add('edf_tempo', 'debug', "Bleu : ". $restant->PARAM_NB_J_BLEU);
     if($restant === false || !isset($restant->PARAM_NB_J_BLANC)){
       $restant = json_decode('{"PARAM_NB_J_BLANC":"NA","PARAM_NB_J_ROUGE":"NA","PARAM_NB_J_BLEU":"NA"}');
       log::add('edf_tempo', 'info', "Erreur de récupération du nombres de jours restant, je test un peu plus tard.");
@@ -370,7 +366,7 @@ class edf_tempo extends eqLogic {
     return  $restant;
   }
 
- public function getJson($url){
+  public function getJson($url){
     if (function_exists('curl_init')) {
       log::add('edf_tempo', 'debug', "fonction getJson via -> cUrl");
       $curl = curl_init();
@@ -400,8 +396,78 @@ class edf_tempo extends eqLogic {
     }
   
     log::add('edf_tempo', 'debug', "Données récupérées : ". $data);
-    $retour = json_decode($data);	
+    $retour = json_decode($data);
+    log::add('edf_tempo', 'debug', "BB : ". $retour->PARAM_NB_J_BLEU);
     return $retour;    
+  }
+
+  public function getJson_old($url){
+    if (function_exists('curl_init')) {
+      log::add('edf_tempo', 'debug', "fonction getJson via -> cUrl");
+      // Utiliser cURL pour récupérer les données
+      $curl           = curl_init();
+      curl_setopt($curl, CURLOPT_URL, $url);
+      curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($curl, CURLOPT_TIMEOUT,        15);
+      curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 15);
+      $data           = curl_exec($curl);
+      $httpRespCode   = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+      curl_close($curl);
+
+
+      log::add('edf_tempo', 'debug', "Réponse HHTP : ". $httpRespCode);
+      if ($httpRespCode == 0) {
+        log::add('edf_tempo', 'error', "Impossible de récupérer les données : ". curl_error($curl));
+        return false;
+      }
+  
+    } else {
+  
+      // Utilise file_get_contents pour récupérer les données
+      log::add('edf_tempo', 'debug', "fonction getJson via -> file_get_contents");
+      $opts = array(
+        'http'=>array(
+          'method'=>"GET",
+          'header'=>array( "User-Agent: Wget/1.20.3 (linux-gnu)",
+              "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+              "Content-Type: application/json"
+          )
+        )
+      );
+      $context  = stream_context_create($opts);
+      $data     = file_get_contents($url, false, $context);
+      if ($data === false) {
+          log::add('edf_tempo', 'error', "Impossible de récupérer les données : ". error_get_last()['message']);
+          return false;
+      }    
+    }
+
+    log::add('edf_tempo', 'debug', "Données récupérées : ". $data);
+    $retour   = json_decode($data);
+    return $retour;    
+  }
+
+  public function updateMaxJrBleu(){
+
+    $month  = date('n');
+    $year   = date('Y');
+    if ($month < 9) {
+        $date1 = new DateTime(($year - 1) . '-09-01');
+        $date2 = new DateTime($year . '-08-31');
+    } else {
+        $date1 = new DateTime($year . '-09-01');
+        $date2 = new DateTime(($year + 1) . '-08-31');
+    }
+    
+    $interval = $date1->diff($date2);
+    $nbJr= $interval->days + 1;
+    $nbBleu = 300;
+    if ($nbJr > 365){
+        $nbBleu = 301;
+    }
+    
+    config::save('global_max_tempo_bleu', $nbBleu, 'edf_tempo');
+    log::add('edf_tempo', 'debug', 'global_max_tempo_bleu a été enregistré avec la valeur ' . config::byKey('global_max_tempo_bleu', 'edf_tempo') . ' jours.');
   }
 
   public function toHtml($_version = 'dashboard') {
@@ -438,6 +504,7 @@ class edf_tempo extends eqLogic {
     $replace['#global_tempo_blanc_hp#']   = config::byKey('global_tempo_blanc_hp', 'edf_tempo');
     $replace['#global_tempo_rouge_hc#']   = config::byKey('global_tempo_rouge_hc', 'edf_tempo');
     $replace['#global_tempo_rouge_hp#']   = config::byKey('global_tempo_rouge_hp', 'edf_tempo');
+    $replace['#global_max_tempo_bleu#']   = config::byKey('global_max_tempo_bleu', 'edf_tempo');
 
     return $this->postToHtml($_version, template_replace($replace, getTemplate('core', $version, 'tile_edf_tempo', 'edf_tempo')));
   }
