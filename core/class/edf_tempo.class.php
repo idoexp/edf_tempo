@@ -331,7 +331,9 @@ class edf_tempo extends eqLogic {
     $eqlogic->checkAndUpdateCmd('edf_tomorrow', $colors->couleurJourJ1);
     $eqlogic->checkAndUpdateCmd('edf_nb_bleu', $restant->PARAM_NB_J_BLEU);
     $eqlogic->checkAndUpdateCmd('edf_nb_blanc', $restant->PARAM_NB_J_BLANC);          
-    $eqlogic->checkAndUpdateCmd('edf_nb_rouge', $restant->PARAM_NB_J_ROUGE);          
+    $eqlogic->checkAndUpdateCmd('edf_nb_rouge', $restant->PARAM_NB_J_ROUGE);     
+
+    log::add('edf_tempo', 'info', "couleur today ". $colors->couleurJourJ);     
 
     if ($colors->couleurJourJ1 == "NA" || $colors->couleurJourJ1 == "NON_DEFINI" || !isset($colors->couleurJourJ1)){
       $eqlogic->checkAndUpdateCmd('edf_status', "NOK");
@@ -346,27 +348,127 @@ class edf_tempo extends eqLogic {
 
   public function getEDFColors(){
     $urlColors = config::byKey('global_url_edf_color', 'edf_tempo').date("Y-m-d");
+
+    $d = new DateTime();
+    $today = $d->format('Y-m-d');
+    $tomorrow = $d->modify('+1 day')->format('Y-m-d');
+
+    $urlColors ="https://api-commerce.edf.fr/commerce/activet/v1/calendrier-jours-effacement?option=TEMPO&dateApplicationBorneInf=".$today."&dateApplicationBorneSup=".$tomorrow."&identifiantConsommateur=src";
+
     $colors = $this->getJson($urlColors);
-    // log::add('edf_tempo', 'info', "Récupération des couleurs : ");
-    if($colors === false || !isset($colors->couleurJourJ1) ){
+
+    log::add('edf_tempo', 'info', "Récupération des couleurs : " .$colors['content']['dateApplicationBorneInf']) ;
+    if(!$colors){
       $colors = json_decode('{"couleurJourJ":"NA","couleurJourJ1":"NA"}');
       log::add('edf_tempo', 'info', "Erreur de récupération de la couleur des jours, je test un peu plus tard.");
+      return $colors;
     }
-    return  $colors;
+
+    $couleurJourJ   = "NA";
+    $couleurJourJ1  = "NA";
+
+    foreach ($colors['content']['options'][0]['calendrier'] as $item) {
+      if ($item['dateApplication'] == $today) {
+          $couleurJourJ = $item['statut'];
+      }
+      if ($item['dateApplication'] == $tomorrow) {
+          $couleurJourJ1 = $item['statut'];
+      }
+    }
+    $r->couleurJourJ  = $couleurJourJ;
+    $r->couleurJourJ1 = $couleurJourJ1;
+
+    return $r;
   }
 
   public function getEDFRestant(){
-    $urlRestant = config::byKey('global_url_edf_restant', 'edf_tempo');
+    // $urlRestant = config::byKey('global_url_edf_restant', 'edf_tempo');
+    
+    $urlRestant = "https://api-commerce.edf.fr/commerce/activet/v1/saisons/search?option=TEMPO&dateReference=".date("Y-m-d");
+
     $restant = $this->getJson($urlRestant);
-    // log::add('edf_tempo', 'info', "Récupération des jours restant : ");
-    if($restant === false || !isset($restant->PARAM_NB_J_BLANC)){
+    $sortedData = [];
+    if (!$restant){
       $restant = json_decode('{"PARAM_NB_J_BLANC":"NA","PARAM_NB_J_ROUGE":"NA","PARAM_NB_J_BLEU":"NA"}');
       log::add('edf_tempo', 'info', "Erreur de récupération du nombres de jours restant, je test un peu plus tard.");
+      return $restant;
     }
+    
+    foreach ($restant['content'] as $item) {
+        $typeJourEff = $item['typeJourEff'];
+        if (!isset($sortedData[$typeJourEff])) {
+            $sortedData[$typeJourEff] = [];
+        }
+        $sortedData[$typeJourEff][] = $item;
+
+        if ($typeJourEff == 'TEMPO_BLEU') {
+            $r->PARAM_NB_J_BLEU = $item['nombreJours'] - $item['nombreJoursTires'];
+        }
+
+        if ($typeJourEff == 'TEMPO_BLANC') {
+            $r->PARAM_NB_J_BLANC = $item['nombreJours'] - $item['nombreJoursTires'];
+        }
+
+        if ($typeJourEff == 'TEMPO_ROUGE') {
+            $r->PARAM_NB_J_ROUGE = $item['nombreJours'] - $item['nombreJoursTires'];
+        }
+
+    }
+    $restant = $r;
     return  $restant;
   }
 
+
   public function getJson($url){
+
+    // Initialiser cURL
+    $ch = curl_init($url);
+    
+    // Définir les options cURL
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    
+    // Ajouter cette ligne pour gérer la décompression automatique
+    curl_setopt($ch, CURLOPT_ENCODING, '');
+    
+    // Si l'API nécessite des en-têtes spécifiques, ajoutez-les ici
+    $headers = [
+        'Accept: application/json, text/plain, */*',
+        'Accept-Encoding: gzip, deflate, br, zstd',
+        'Accept-Language: fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Application-Origine-Controlee: site_RC',
+        'Content-Type: application/json',
+        'Origin: https://particulier.edf.fr',
+        'Referer: https://particulier.edf.fr/',
+        'Sec-CH-UA: "Chromium";v="128", "Not;A=Brand";v="24", "Google Chrome";v="128"',
+        'Sec-CH-UA-Mobile: ?0',
+        'Sec-CH-UA-Platform: "Windows"',
+        'Sec-Fetch-Dest: empty',
+        'Sec-Fetch-Mode: cors',
+        'Sec-Fetch-Site: same-site',
+        'Situation-Usage: saison',
+        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+        'X-Request-ID: 666'
+    ];
+    
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    // Exécuter la requête cURL
+    $response = curl_exec($ch);
+    
+    // Vérifier les erreurs
+    if (curl_errno($ch)) {
+        // echo 'Erreur cURL: ' . curl_error($ch);
+        return false;
+    } else {
+        // Traiter la réponse JSON
+        $data = json_decode($response, true);
+        return $data;
+        
+    }
+    
+  }
+  public function getJson_old2($url){
     if (function_exists('curl_init')) {
       log::add('edf_tempo', 'debug', "fonction getJson via -> cUrl");
       $curl = curl_init();
