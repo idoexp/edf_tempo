@@ -25,6 +25,7 @@ Le site d'EDF est mis à jours tous les jours vers 11h. Il y a donc une tâche p
 Si vous voulez planifiez des scénarios en fonction de la couleur du jour (par exemple une alerte mail) faite le après 11h06 de manière à avoir la dernière information.
 
 # changelog
+
 * Mise à jour du 1 Septembre 2024.
   - Mise à jour du système de récupérations des données d'EDF
   
