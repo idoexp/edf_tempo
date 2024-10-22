@@ -44,53 +44,53 @@ if (!isConnect()) {
 
     <div class="form-group">
       <label class="col-md-4 control-label">{{Tarif Bleu HC}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en centime par kilowattheure}}"></i></sup>
+        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en euros par kilowattheure}}"></i></sup>
       </label>
       <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_tempo_bleu_hc" value="10.56"/>
+        <input class="configKey form-control"  data-l1key="global_tempo_bleu_hc" value="0.1296"/>
       </div>
     </div>
 
     <div class="form-group">
       <label class="col-md-4 control-label">{{Tarif Bleu HP}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en centime par kilowattheure}}"></i></sup>
+        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en euros par kilowattheure}}"></i></sup>
       </label>
       <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_tempo_bleu_hp" value="13.69"/>
+        <input class="configKey form-control"  data-l1key="global_tempo_bleu_hp" value="0.1609"/>
       </div>
     </div>
 
     <div class="form-group">
       <label class="col-md-4 control-label">{{Tarif Blanc HC}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en centime par kilowattheure}}"></i></sup>
+        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en euros par kilowattheure}}"></i></sup>
       </label>
       <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_tempo_blanc_hc" value="12.46"/>
+        <input class="configKey form-control"  data-l1key="global_tempo_blanc_hc" value="0.1486"/>
       </div>
     </div>
     <div class="form-group">
       <label class="col-md-4 control-label">{{Tarif Blanc HP}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en centime par kilowattheure}}"></i></sup>
+        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en euros par kilowattheure}}"></i></sup>
       </label>
       <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_tempo_blanc_hp" value="16.54"/>
+        <input class="configKey form-control"  data-l1key="global_tempo_blanc_hp" value="0.1894"/>
       </div>
     </div>
 
     <div class="form-group">
       <label class="col-md-4 control-label">{{Tarif Rouge HC}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en centime par kilowattheure}}"></i></sup>
+        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en euros par kilowattheure}}"></i></sup>
       </label>
       <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_tempo_rouge_hc" value="13.28"/>
+        <input class="configKey form-control"  data-l1key="global_tempo_rouge_hc" value="0.1568"/>
       </div>
     </div>
     <div class="form-group">
       <label class="col-md-4 control-label">{{Tarif Rouge HP}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en centime par kilowattheure}}"></i></sup>
+        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en euros par kilowattheure}}"></i></sup>
       </label>
       <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_tempo_rouge_hp" value="73.24"/>
+        <input class="configKey form-control"  data-l1key="global_tempo_rouge_hp" value="0.7562"/>
       </div>
     </div>
 
