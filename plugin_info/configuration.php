@@ -94,6 +94,15 @@ if (!isConnect()) {
       </div>
     </div>
 
+    <div class="form-group">
+      <label class="col-md-4 control-label">{{Nombres max de jours bleus }}
+        <sup><i class="fas fa-question-circle tooltips" title="{{301 en cas d'année bisextile}}"></i></sup>
+      </label>
+      <div class="col-md-4">
+        <input class="configKey form-control"  data-l1key="global_max_tempo_bleu" value="0"/>
+      </div>
+    </div>
+
 
   </fieldset>
 </form>
