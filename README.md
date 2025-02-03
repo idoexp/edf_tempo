@@ -26,6 +26,9 @@ Si vous voulez planifiez des scénarios en fonction de la couleur du jour (par e
 
 # changelog
 
+* Mise à jour du 3 Février 2025.
+  - Mise à jour des tarifs TEMPO pour l'année 2025
+  - 
 * Mise à jour du 1 Septembre 2024.
   - Mise à jour du système de récupérations des données d'EDF
   
