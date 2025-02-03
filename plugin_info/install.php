@@ -21,12 +21,21 @@ require_once dirname(__FILE__) . '/../../../core/php/core.inc.php';
 function edf_tempo_install() {
 	$defaultUrlRestant 		= 'https://particulier.edf.fr/services/rest/referentiel/getNbTempoDays?TypeAlerte=TEMPO';
 	$defaultUrlColor 		= 'https://particulier.edf.fr/services/rest/referentiel/searchTempoStore?dateRelevant=';
+	/* **** Tarif 1er Février 2024 **** *
 	$defaultTempoBleuHC 	= '0.1056€';
 	$defaultTempoBleuHP 	= '0.1369€';
 	$defaultTempoBlancHC 	= '0.1246€';
 	$defaultTempoBlancHP 	= '0.1654€';
 	$defaultTempoRougeHC 	= '0.1328€';
 	$defaultTempoRougeHP 	= '0.7324€';
+	*/
+	/* **** Tarif 1 Février 2025 **** */
+	$defaultTempoBleuHC 	= '0.1288€';
+	$defaultTempoBleuHP 	= '0.1552€';
+	$defaultTempoBlancHC 	= '0.1447€';
+	$defaultTempoBlancHP 	= '0.1792€';
+	$defaultTempoRougeHC 	= '0.1518€';
+	$defaultTempoRougeHP 	= '0.6586€';
 
 	config::save('global_url_edf_restant', $defaultUrlRestant, 'edf_tempo');
 	config::save('global_url_edf_color', $defaultUrlColor, 'edf_tempo');
@@ -42,6 +51,20 @@ function edf_tempo_install() {
 
 // Fonction exécutée automatiquement après la mise à jour du plugin
 function edf_tempo_update() {
+	$defaultTempoBleuHC 	= '0.1288€';
+	$defaultTempoBleuHP 	= '0.1552€';
+	$defaultTempoBlancHC 	= '0.1447€';
+	$defaultTempoBlancHP 	= '0.1792€';
+	$defaultTempoRougeHC 	= '0.1518€';
+	$defaultTempoRougeHP 	= '0.6586€';
+
+	config::save('global_tempo_bleu_hc', $defaultTempoBleuHC, 'edf_tempo');
+	config::save('global_tempo_bleu_hp', $defaultTempoBleuHP, 'edf_tempo');
+	config::save('global_tempo_blanc_hc', $defaultTempoBlancHC, 'edf_tempo');
+	config::save('global_tempo_blanc_hp', $defaultTempoBlancHP, 'edf_tempo');
+	config::save('global_tempo_rouge_hc', $defaultTempoRougeHC, 'edf_tempo');
+	config::save('global_tempo_rouge_hp', $defaultTempoRougeHP, 'edf_tempo');
+	log::add('edf_tempo', 'info', "Mise à jour des tarifs du 1er Février 2025.");
 }
 
 // Fonction exécutée automatiquement après la suppression du plugin
