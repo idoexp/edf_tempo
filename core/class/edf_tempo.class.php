@@ -375,6 +375,8 @@ class edf_tempo extends eqLogic {
           $couleurJourJ1 = $item['statut'];
       }
     }
+	
+	$r = new stdClass();
     $r->couleurJourJ  = $couleurJourJ;
     $r->couleurJourJ1 = $couleurJourJ1;
 
@@ -394,6 +396,7 @@ class edf_tempo extends eqLogic {
       return $restant;
     }
     
+	$r = new stdClass();
     foreach ($restant['content'] as $item) {
         $typeJourEff = $item['typeJourEff'];
         if (!isset($sortedData[$typeJourEff])) {
