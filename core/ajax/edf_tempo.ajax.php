@@ -29,7 +29,27 @@ try {
   */
     ajax::init();
 
+    if (init('action') == 'fetchTarifs') {
+      $result = edf_tempo::fetchRemoteTarifs();
+      ajax::success($result);
+    }
 
+    if (init('action') == 'updateTarifs') {
+      $result = edf_tempo::applyRemoteTarifs();
+      ajax::success($result);
+    }
+
+    if (init('action') == 'dismissTarifs') {
+      edf_tempo::dismissRemoteTarifs();
+      ajax::success();
+    }
+
+    if (init('action') == 'markTarifsManual') {
+      config::save('global_tarifs_update_date', date('d-m-Y à H:i'), 'edf_tempo');
+      config::save('global_tarifs_update_source', 'Manuel par l\'utilisateur', 'edf_tempo');
+      log::add('edf_tempo', 'info', "Tarifs modifiés manuellement le " . date('d-m-Y à H:i'));
+      ajax::success();
+    }
 
     throw new Exception(__('Aucune méthode correspondante à', __FILE__) . ' : ' . init('action'));
     /*     * *********Catch exeption*************** */

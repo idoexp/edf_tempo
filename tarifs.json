@@ -1,0 +1,12 @@
+{
+  "version": "2026-02-01",
+  "label": "Tarifs du 1er Février 2026",
+  "tarifs": {
+    "bleu_hc": "0.1325€",
+    "bleu_hp": "0.1612€",
+    "blanc_hc": "0.1499€",
+    "blanc_hp": "0.1871€",
+    "rouge_hc": "0.1575€",
+    "rouge_hp": "0.7060€"
+  }
+}

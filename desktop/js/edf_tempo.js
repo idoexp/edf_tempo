@@ -16,6 +16,12 @@ $('head').append(`<link href="/plugins/edf_tempo/desktop/css/edf_tempo.css" rel=
 * along with Jeedom. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* Bouton Logs */
+$('#bt_showPluginLog').on('click', function() {
+  $('#md_modal').dialog({title: '{{Log du plugin edf_tempo}}'});
+  $('#md_modal').load('index.php?v=d&modal=log.display&log=edf_tempo').dialog('open');
+});
+
 /* Permet la réorganisation des commandes dans l'équipement */
 $("#table_cmd").sortable({
   axis: "y",

@@ -19,123 +19,210 @@
 require_once __DIR__  . '/../../../../core/php/core.inc.php';
 
 class edf_tempo extends eqLogic {
-  /*     * *************************Attributs****************************** */
-
-  /*
-  * Permet de définir les possibilités de personnalisation du widget (en cas d'utilisation de la fonction 'toHtml' par exemple)
-  * Tableau multidimensionnel - exemple: array('custom' => true, 'custom::layout' => false)
-  public static $_widgetPossibility = array();
-  */
-
-  /*
-  * Permet de crypter/décrypter automatiquement des champs de configuration du plugin
-  * Exemple : "param1" & "param2" seront cryptés mais pas "param3"
-  public static $_encryptConfigKey = array('param1', 'param2');
-  */
-
   /*     * ***********************Methode static*************************** */
  public static function cron() {
     $eqLogics = self::byType('edf_tempo', true);
 
-    $heureStart = 11;
-    $heureEnd   = 12;
+    $heure   = (int) date("G");
+    $minutes = (int) date("i");
 
-    $heure    = date("G");
-    $minutes  = date("i");
-
-    if ($heure >= $heureStart && $heure <= $heureEnd && $minutes <= 5 || $heure == 0 && $minutes <= 2){
+    // Tentative initiale entre 11h00 et 11h05
+    if ($heure == 11 && $minutes <= 5) {
       foreach ($eqLogics as $edf_tempo) {
         try {
-            if ($heure == 0 && $minutes = 2){
-              $edf_tempo->checkAndUpdateCmd('edf_status', "NOK");
-            }
+          $cmd = $edf_tempo->getCmd(null, 'edf_status');
+          if (is_object($cmd) && $cmd->execCmd() != "OK") {
+            log::add('edf_tempo', 'info', "Tentative de synchronisation...");
+            self::updateEDFTempoInfos($edf_tempo);
 
-            $cmd = $edf_tempo->getCmd(null,'edf_status');
-            if(is_object($cmd)){
-              $edf_status = $cmd->execCmd();
-              if ($edf_status != "OK"){
-                self::updateEDFTempoInfos($edf_tempo);
-              }
-              if ($heure == $heureEnd && $edf_status !="OK"){
-                log::add('edf_tempo', 'error', "Impossible de récupérer la couleur des jours depuis 11h du matin.");
-              }
+            // Si toujours NOK après la tentative, initialiser le compteur de retry
+            if ($cmd->execCmd() != "OK") {
+              config::save('edf_retry_count', 0, 'edf_tempo');
+              config::save('edf_retry_timestamp', time(), 'edf_tempo');
             }
-
-          // $cronExpression = $edf_tempo->getConfiguration('autorefresh');
-          // if (self::isCronTimeToRun($cronExpression)) {
-          // }
+          }
         } catch (Exception $e) {
-          log::add('edf_tempo', 'info', $e->getMessage());
+          log::add('edf_tempo', 'warning', "Erreur cron : " . $e->getMessage());
         }
+      }
+      return;
+    }
+
+    // Système de retry : 3 tentatives à +3min, +6min, +9min après l'échec initial
+    $retryCount = (int) config::byKey('edf_retry_count', 'edf_tempo', -1);
+    $retryTimestamp = (int) config::byKey('edf_retry_timestamp', 'edf_tempo', 0);
+
+    if ($retryCount < 0 || $retryCount >= 3 || $retryTimestamp == 0) {
+      return;
+    }
+
+    $delais = array(3 * 60, 6 * 60, 9 * 60); // 3min, 6min, 9min
+    $elapsed = time() - $retryTimestamp;
+
+    if ($elapsed < $delais[$retryCount]) {
+      return;
+    }
+
+    $attempt = $retryCount + 1;
+    log::add('edf_tempo', 'info', "Retry " . $attempt . "/3 — nouvelle tentative de synchronisation...");
+
+    foreach ($eqLogics as $edf_tempo) {
+      try {
+        $cmd = $edf_tempo->getCmd(null, 'edf_status');
+        if (is_object($cmd) && $cmd->execCmd() != "OK") {
+          self::updateEDFTempoInfos($edf_tempo);
+
+          if ($cmd->execCmd() == "OK") {
+            // Succès : on arrête les retries
+            log::add('edf_tempo', 'info', "Synchronisation réussie au retry " . $attempt . "/3.");
+            config::save('edf_retry_count', -1, 'edf_tempo');
+            config::save('edf_retry_timestamp', 0, 'edf_tempo');
+            return;
+          }
+        }
+      } catch (Exception $e) {
+        log::add('edf_tempo', 'warning', "Erreur retry " . $attempt . "/3 : " . $e->getMessage());
       }
     }
 
+    config::save('edf_retry_count', $attempt, 'edf_tempo');
+
+    // Après 3 échecs, log d'erreur final
+    if ($attempt >= 3) {
+      log::add('edf_tempo', 'error', "Impossible de récupérer les données EDF Tempo malgré 3 tentatives. Vous pouvez essayer manuellement via le bouton Rafraîchir sur l'équipement.");
+      config::save('edf_retry_count', -1, 'edf_tempo');
+      config::save('edf_retry_timestamp', 0, 'edf_tempo');
+    }
   }
 
 
-  public static function isCronTimeToRun($cronExpression) {
-    // Convertir la valeur du cron en heure et minute au format 'HH:mm'
-    list($minute, $hour) = explode(' ', $cronExpression);
-    $cronTime = sprintf('%02d:%02d', $hour, $minute);
-    
-    // Vérifier si le cron correspond à l'heure actuelle
-    return $cronTime == date('H:i');
-  }
-
-
-
-
-  /*
-  * Fonction exécutée automatiquement toutes les minutes par Jeedom
-  public static function cron() {}
-  */
-
-  /*
-  * Fonction exécutée automatiquement toutes les 5 minutes par Jeedom
-  public static function cron5() {}
-  */
-
-  /*
-  * Fonction exécutée automatiquement toutes les 10 minutes par Jeedom
-  public static function cron10() {}
-  */
-
-  /*
-  * Fonction exécutée automatiquement toutes les 15 minutes par Jeedom
-  public static function cron15() {}
-  */
-
-  /*
-  * Fonction exécutée automatiquement toutes les 30 minutes par Jeedom
-  public static function cron30() {}
-  */
-
-  /*
-  * Fonction exécutée automatiquement toutes les heures par Jeedom
-  public static function cronHourly() {}
-  */
-
-  /*
-  * Fonction exécutée automatiquement tous les jours par Jeedom
-  */
+  // Fonction exécutée automatiquement tous les jours par Jeedom
   public static function cronDaily() {
     $eqLogics = self::byType('edf_tempo', true);
 
     foreach ($eqLogics as $edf_tempo) {
       try {
         $edf_tempo->checkAndUpdateCmd('edf_status', "NOK");
-        $cronExpression = $edf_tempo->getConfiguration('autorefresh');
-        if (self::isCronTimeToRun($cronExpression)) {
-          self::updateEDFTempoInfos($edf_tempo);
-        }
       } catch (Exception $e) {
-        log::add('edf_tempo', 'info', $e->getMessage());
+        log::add('edf_tempo', 'warning', "Erreur cronDaily : " . $e->getMessage());
       }
     }
     // Force la MAJ du nombre de jours bleu le 1er septembre
     if (date('m-d') == '09-01') {
       self::updateMaxJrBleu();
     }
+
+    // Vérifie si de nouveaux tarifs sont disponibles
+    self::checkRemoteTarifs();
+  }
+
+  private static function getRemoteJson($url) {
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_ENCODING, '');
+    $response = curl_exec($ch);
+
+    if (curl_errno($ch)) {
+      $error = curl_error($ch);
+      curl_close($ch);
+      throw new Exception("Impossible de récupérer les données distantes : " . $error);
+    }
+    curl_close($ch);
+
+    $data = json_decode($response, true);
+    if (!$data) {
+      throw new Exception("Réponse JSON distante invalide.");
+    }
+
+    return $data;
+  }
+
+  public static function checkRemoteTarifs() {
+    $url = config::byKey('global_url_tarifs_json', 'edf_tempo');
+    if (empty($url)) {
+      return;
+    }
+
+    try {
+      $remote = self::getRemoteJson($url);
+    } catch (Exception $e) {
+      log::add('edf_tempo', 'warning', "Impossible de vérifier les tarifs distants : " . $e->getMessage());
+      return;
+    }
+
+    if (!isset($remote['version'])) {
+      log::add('edf_tempo', 'warning', "Fichier tarifs distant invalide (version manquante).");
+      return;
+    }
+
+    $currentVersion = config::byKey('global_tarifs_version', 'edf_tempo');
+    $dismissedVersion = config::byKey('global_tarifs_dismissed_version', 'edf_tempo');
+
+    if ($remote['version'] != $currentVersion && $remote['version'] != $dismissedVersion) {
+      $label = isset($remote['label']) ? $remote['label'] : $remote['version'];
+      log::add('edf_tempo', 'warning', "Nouveaux tarifs EDF Tempo disponibles (" . $label . "). Rendez-vous dans la configuration du plugin pour les appliquer.");
+    }
+  }
+
+  public static function fetchRemoteTarifs() {
+    $url = config::byKey('global_url_tarifs_json', 'edf_tempo');
+    if (empty($url)) {
+      throw new Exception("URL des tarifs distants non configurée.");
+    }
+
+    $remote = self::getRemoteJson($url);
+
+    if (!isset($remote['version']) || !isset($remote['tarifs'])) {
+      throw new Exception("Fichier tarifs distant invalide.");
+    }
+
+    // Ajouter les tarifs actuels pour comparaison
+    $remote['current'] = array(
+      'bleu_hc'  => config::byKey('global_tempo_bleu_hc', 'edf_tempo'),
+      'bleu_hp'  => config::byKey('global_tempo_bleu_hp', 'edf_tempo'),
+      'blanc_hc' => config::byKey('global_tempo_blanc_hc', 'edf_tempo'),
+      'blanc_hp' => config::byKey('global_tempo_blanc_hp', 'edf_tempo'),
+      'rouge_hc' => config::byKey('global_tempo_rouge_hc', 'edf_tempo'),
+      'rouge_hp' => config::byKey('global_tempo_rouge_hp', 'edf_tempo'),
+    );
+
+    return $remote;
+  }
+
+  public static function applyRemoteTarifs() {
+    $remote = self::fetchRemoteTarifs();
+
+    $tarifs = $remote['tarifs'];
+    config::save('global_tempo_bleu_hc', $tarifs['bleu_hc'], 'edf_tempo');
+    config::save('global_tempo_bleu_hp', $tarifs['bleu_hp'], 'edf_tempo');
+    config::save('global_tempo_blanc_hc', $tarifs['blanc_hc'], 'edf_tempo');
+    config::save('global_tempo_blanc_hp', $tarifs['blanc_hp'], 'edf_tempo');
+    config::save('global_tempo_rouge_hc', $tarifs['rouge_hc'], 'edf_tempo');
+    config::save('global_tempo_rouge_hp', $tarifs['rouge_hp'], 'edf_tempo');
+    config::save('global_tarifs_version', $remote['version'], 'edf_tempo');
+    config::save('global_tarifs_dismissed_version', '', 'edf_tempo');
+    config::save('global_tarifs_update_date', date('d-m-Y à H:i'), 'edf_tempo');
+    config::save('global_tarifs_update_source', 'synchronisé', 'edf_tempo');
+
+    $label = isset($remote['label']) ? $remote['label'] : $remote['version'];
+    log::add('edf_tempo', 'info', "Tarifs mis à jour : " . $label);
+
+    return $remote;
+  }
+
+  public static function dismissRemoteTarifs() {
+    try {
+      $remote = self::fetchRemoteTarifs();
+    } catch (Exception $e) {
+      log::add('edf_tempo', 'warning', "Impossible d'ignorer les tarifs : " . $e->getMessage());
+      return;
+    }
+
+    config::save('global_tarifs_dismissed_version', $remote['version'], 'edf_tempo');
+    log::add('edf_tempo', 'info', "Notification de mise à jour des tarifs ignorée pour la version " . $remote['version']);
   }
 
   /*     * *********************Méthodes d'instance************************* */
@@ -146,8 +233,6 @@ class edf_tempo extends eqLogic {
 
   // Fonction exécutée automatiquement après la création de l'équipement
   public function postInsert() {
-    log::add('edf_tempo', 'info', "Mise à jour de l'autorefresh de l'équipement.");
-    // $this->setConfiguration('autorefresh', '6 11 * * *');
     $this->setIsEnable(1);
     $this->setIsVisible(1);
     $this->save();
@@ -261,7 +346,7 @@ class edf_tempo extends eqLogic {
     $refresh->setLogicalId('refresh');
     $refresh->setType('action');
     $refresh->setSubType('other');
-    $info->setOrder(1);
+    $refresh->setOrder(1);
     $refresh->save();    
 
 
@@ -278,7 +363,7 @@ class edf_tempo extends eqLogic {
     $info->setOrder(8);
     $info->save();
 
-    $this->updateEDFTempoInfos($this); // mets à jour la tuile
+    self::updateEDFTempoInfos($this); // mets à jour la tuile
   }
 
   // Fonction exécutée automatiquement avant la suppression de l'équipement
@@ -288,39 +373,6 @@ class edf_tempo extends eqLogic {
   // Fonction exécutée automatiquement après la suppression de l'équipement
   public function postRemove() {
   }
-
-  /*
-  * Permet de crypter/décrypter automatiquement des champs de configuration des équipements
-  * Exemple avec le champ "Mot de passe" (password)
-  public function decrypt() {
-    $this->setConfiguration('password', utils::decrypt($this->getConfiguration('password')));
-  }
-  public function encrypt() {
-    $this->setConfiguration('password', utils::encrypt($this->getConfiguration('password')));
-  }
-  */
-
-  /*
-  * Permet de modifier l'affichage du widget (également utilisable par les commandes)
-  public function toHtml($_version = 'dashboard') {}
-  */
-
-  /*
-  * Permet de déclencher une action avant modification d'une variable de configuration du plugin
-  * Exemple avec la variable "param3"
-  public static function preConfig_param3( $value ) {
-    // do some checks or modify on $value
-    return $value;
-  }
-  */
-
-  /*
-  * Permet de déclencher une action après modification d'une variable de configuration du plugin
-  * Exemple avec la variable "param3"
-  public static function postConfig_param3($value) {
-    // no return value
-  }
-  */
 
   /*     * **********************Getteur Setteur*************************** */
   public static function updateEDFTempoInfos($eqlogic) {
@@ -333,36 +385,36 @@ class edf_tempo extends eqLogic {
     $eqlogic->checkAndUpdateCmd('edf_nb_blanc', $restant->PARAM_NB_J_BLANC);          
     $eqlogic->checkAndUpdateCmd('edf_nb_rouge', $restant->PARAM_NB_J_ROUGE);     
 
-    log::add('edf_tempo', 'info', "couleur today ". $colors->couleurJourJ);     
+    log::add('edf_tempo', 'debug', "Couleur du jour : " . $colors->couleurJourJ . " — Demain : " . (isset($colors->couleurJourJ1) ? $colors->couleurJourJ1 : 'N/A'));
 
-    if ($colors->couleurJourJ1 == "NA" || $colors->couleurJourJ1 == "NON_DEFINI" || !isset($colors->couleurJourJ1)){
+    if (!isset($colors->couleurJourJ1) || $colors->couleurJourJ1 == "NA" || $colors->couleurJourJ1 == "NON_DEFINI"){
       $eqlogic->checkAndUpdateCmd('edf_status', "NOK");
-      log::add('edf_tempo', 'info', "Erreur de récupération des informations, je test un peu plus tard.");
+      log::add('edf_tempo', 'warning', "Couleur de demain indisponible, nouvelle tentative ultérieure.");
     }else{
-      $eqlogic->checkAndUpdateCmd('edf_lastupdate', date("d-m-Y à H:i"));          
+      $eqlogic->checkAndUpdateCmd('edf_lastupdate', date("d-m-Y à H:i"));
       $eqlogic->checkAndUpdateCmd('edf_status', "OK");
-      log::add('edf_tempo', 'info', "Mise à jour des informations d'EDF Tempo le ".date("d-m-Y à H:i"));
+      log::add('edf_tempo', 'info', "Synchronisation EDF Tempo réussie le " . date("d-m-Y à H:i"));
     }
 
   }
 
   public function getEDFColors(){
-    $urlColors = config::byKey('global_url_edf_color', 'edf_tempo').date("Y-m-d");
-
     $d = new DateTime();
     $today = $d->format('Y-m-d');
     $tomorrow = $d->modify('+1 day')->format('Y-m-d');
 
-    $urlColors ="https://api-commerce.edf.fr/commerce/activet/v1/calendrier-jours-effacement?option=TEMPO&dateApplicationBorneInf=".$today."&dateApplicationBorneSup=".$tomorrow."&identifiantConsommateur=src";
+    $baseUrl = config::byKey('global_url_edf_color', 'edf_tempo');
+    $urlColors = $baseUrl . $today . "&dateApplicationBorneSup=" . $tomorrow . "&identifiantConsommateur=src";
 
     $colors = $this->getJson($urlColors);
 
-    log::add('edf_tempo', 'info', "Récupération des couleurs : " .$colors['content']['dateApplicationBorneInf']) ;
     if(!$colors){
       $colors = json_decode('{"couleurJourJ":"NA","couleurJourJ1":"NA"}');
-      log::add('edf_tempo', 'info', "Erreur de récupération de la couleur des jours, je test un peu plus tard.");
+      log::add('edf_tempo', 'warning', "Impossible de récupérer la couleur des jours, nouvelle tentative ultérieure.");
       return $colors;
     }
+
+    log::add('edf_tempo', 'debug', "Couleurs récupérées depuis : " . $colors['content']['dateApplicationBorneInf']);
 
     $couleurJourJ   = "NA";
     $couleurJourJ1  = "NA";
@@ -384,25 +436,18 @@ class edf_tempo extends eqLogic {
   }
 
   public function getEDFRestant(){
-    // $urlRestant = config::byKey('global_url_edf_restant', 'edf_tempo');
-    
-    $urlRestant = "https://api-commerce.edf.fr/commerce/activet/v1/saisons/search?option=TEMPO&dateReference=".date("Y-m-d");
+    $urlRestant = config::byKey('global_url_edf_restant', 'edf_tempo') . "&dateReference=" . date("Y-m-d");
 
     $restant = $this->getJson($urlRestant);
-    $sortedData = [];
     if (!$restant){
       $restant = json_decode('{"PARAM_NB_J_BLANC":"NA","PARAM_NB_J_ROUGE":"NA","PARAM_NB_J_BLEU":"NA"}');
-      log::add('edf_tempo', 'info', "Erreur de récupération du nombres de jours restant, je test un peu plus tard.");
+      log::add('edf_tempo', 'warning', "Impossible de récupérer le nombre de jours restants, nouvelle tentative ultérieure.");
       return $restant;
     }
     
 	$r = new stdClass();
     foreach ($restant['content'] as $item) {
         $typeJourEff = $item['typeJourEff'];
-        if (!isset($sortedData[$typeJourEff])) {
-            $sortedData[$typeJourEff] = [];
-        }
-        $sortedData[$typeJourEff][] = $item;
 
         if ($typeJourEff == 'TEMPO_BLEU') {
             $r->PARAM_NB_J_BLEU = $item['nombreJours'] - $item['nombreJoursTires'];
@@ -430,6 +475,8 @@ class edf_tempo extends eqLogic {
     // Définir les options cURL
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
     
     // Ajouter cette ligne pour gérer la décompression automatique
     curl_setopt($ch, CURLOPT_ENCODING, '');
@@ -457,102 +504,30 @@ class edf_tempo extends eqLogic {
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     
     // Exécuter la requête cURL
+    log::add('edf_tempo', 'debug', "cURL requête vers : " . $url);
     $response = curl_exec($ch);
-    
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
     // Vérifier les erreurs
     if (curl_errno($ch)) {
-        // echo 'Erreur cURL: ' . curl_error($ch);
+        $error = curl_error($ch);
+        curl_close($ch);
+        log::add('edf_tempo', 'debug', "cURL erreur : " . $error);
         return false;
-    } else {
-        // Traiter la réponse JSON
-        $data = json_decode($response, true);
-        return $data;
-        
-    }
-    
-  }
-  public function getJson_old2($url){
-    if (function_exists('curl_init')) {
-      log::add('edf_tempo', 'debug', "fonction getJson via -> cUrl");
-      $curl = curl_init();
-      curl_setopt($curl, CURLOPT_URL, $url);
-      curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-      curl_setopt($curl, CURLOPT_TIMEOUT, 15);
-      curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 15);
-      curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true); // Suivre les redirections
-      curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false); // Ne pas vérifier le certificat SSL
-      curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-        "User-Agent: Wget/1.20.3 (linux-gnu)",
-        "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Content-Type: application/json"
-      ));
-      $data = curl_exec($curl);
-      $httpRespCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-      curl_close($curl);
-  
-      log::add('edf_tempo', 'debug', "Réponse HTTP : ". $httpRespCode);
-      if ($httpRespCode == 0) {
-        log::add('edf_tempo', 'error', "Impossible de récupérer les données : ". curl_error($curl));
-        return false;
-      }
-    } else {
-      log::add('edf_tempo', 'error', "cURL n'est pas disponible sur ce serveur.");
-      return false;
-    }
-  
-    log::add('edf_tempo', 'debug', "Données récupérées : ". $data);
-    $retour = json_decode($data);
-    log::add('edf_tempo', 'debug', "BB : ". $retour->PARAM_NB_J_BLEU);
-    return $retour;    
-  }
-
-  public function getJson_old($url){
-    if (function_exists('curl_init')) {
-      log::add('edf_tempo', 'debug', "fonction getJson via -> cUrl");
-      // Utiliser cURL pour récupérer les données
-      $curl           = curl_init();
-      curl_setopt($curl, CURLOPT_URL, $url);
-      curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-      curl_setopt($curl, CURLOPT_TIMEOUT,        15);
-      curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 15);
-      $data           = curl_exec($curl);
-      $httpRespCode   = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-      curl_close($curl);
-
-
-      log::add('edf_tempo', 'debug', "Réponse HHTP : ". $httpRespCode);
-      if ($httpRespCode == 0) {
-        log::add('edf_tempo', 'error', "Impossible de récupérer les données : ". curl_error($curl));
-        return false;
-      }
-  
-    } else {
-  
-      // Utilise file_get_contents pour récupérer les données
-      log::add('edf_tempo', 'debug', "fonction getJson via -> file_get_contents");
-      $opts = array(
-        'http'=>array(
-          'method'=>"GET",
-          'header'=>array( "User-Agent: Wget/1.20.3 (linux-gnu)",
-              "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-              "Content-Type: application/json"
-          )
-        )
-      );
-      $context  = stream_context_create($opts);
-      $data     = file_get_contents($url, false, $context);
-      if ($data === false) {
-          log::add('edf_tempo', 'error', "Impossible de récupérer les données : ". error_get_last()['message']);
-          return false;
-      }    
     }
 
-    log::add('edf_tempo', 'debug', "Données récupérées : ". $data);
-    $retour   = json_decode($data);
-    return $retour;    
-  }
+    curl_close($ch);
+    log::add('edf_tempo', 'debug', "cURL réponse HTTP " . $httpCode . " — taille : " . strlen($response) . " octets");
 
-  public function updateMaxJrBleu(){
+    $data = json_decode($response, true);
+    if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+        log::add('edf_tempo', 'debug', "JSON decode erreur : " . json_last_error_msg() . " — réponse brute (500 premiers chars) : " . substr($response, 0, 500));
+        return false;
+    }
+
+    return $data;
+  }
+  public static function updateMaxJrBleu(){
 
     $month  = date('n');
     $year   = date('Y');
@@ -576,7 +551,6 @@ class edf_tempo extends eqLogic {
   }
 
   public function toHtml($_version = 'dashboard') {
-    $texte="";
     $replace = $this->preToHtml($_version);
     if (!is_array($replace)) {
       return $replace;
@@ -610,6 +584,8 @@ class edf_tempo extends eqLogic {
     $replace['#global_tempo_rouge_hc#']   = config::byKey('global_tempo_rouge_hc', 'edf_tempo');
     $replace['#global_tempo_rouge_hp#']   = config::byKey('global_tempo_rouge_hp', 'edf_tempo');
     $replace['#global_max_tempo_bleu#']   = config::byKey('global_max_tempo_bleu', 'edf_tempo');
+    $replace['#global_max_tempo_blanc#']  = config::byKey('global_max_tempo_blanc', 'edf_tempo');
+    $replace['#global_max_tempo_rouge#']  = config::byKey('global_max_tempo_rouge', 'edf_tempo');
 
     return $this->postToHtml($_version, template_replace($replace, getTemplate('core', $version, 'tile_edf_tempo', 'edf_tempo')));
   }
@@ -617,31 +593,14 @@ class edf_tempo extends eqLogic {
 }
 
 class edf_tempoCmd extends cmd {
-  /*     * *************************Attributs****************************** */
-
-  /*
-  public static $_widgetPossibility = array();
-  */
-
-  /*     * ***********************Methode static*************************** */
-
-
-  /*     * *********************Methode d'instance************************* */
-
-  /*
-  * Permet d'empêcher la suppression des commandes même si elles ne sont pas dans la nouvelle configuration de l'équipement envoyé en JS
-  public function dontRemoveCmd() {
-    return true;
-  }
-  */
 
   // Exécution d'une commande
   public function execute($_options = array()) {
       $eqlogic = $this->getEqLogic();
       switch ($this->getLogicalId()) {
         case 'refresh': 
-          log::add('edf_tempo', 'info', "Mise à jour forcée le ".date("m-d-Y à H:i"));
-          $eqlogic->updateEDFTempoInfos($eqlogic);
+          log::add('edf_tempo', 'info', "Mise à jour manuelle le " . date("d-m-Y à H:i"));
+          edf_tempo::updateEDFTempoInfos($eqlogic);
           // $eqlogic->checkAndUpdateCmd('edf_lastupdate', "Forcée le ".date("m-d-Y à H:i")); 
           $eqlogic->refreshWidget();      
         break;
