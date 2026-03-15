@@ -24,199 +24,147 @@ if (!isConnect()) {
 $tarifsVersion = config::byKey('global_tarifs_version', 'edf_tempo');
 $tarifsDate = config::byKey('global_tarifs_update_date', 'edf_tempo');
 $tarifsSource = config::byKey('global_tarifs_update_source', 'edf_tempo');
-$tarifsDisplay = '';
-if ($tarifsVersion) {
-  $versionDate = DateTime::createFromFormat('Y-m-d', $tarifsVersion);
-  $tarifsDisplay = $versionDate ? $versionDate->format('d/m/Y') : $tarifsVersion;
-  if ($tarifsDate) {
-    $tarifsDisplay .= ' — mis à jour le ' . $tarifsDate;
-  }
-  if ($tarifsSource) {
-    $tarifsDisplay .= ' (' . $tarifsSource . ')';
-  }
-} else {
-  $tarifsDisplay = 'Non défini';
-}
 ?>
 <form class="form-horizontal">
   <fieldset>
 
-    <legend><i class="fas fa-sync-alt"></i> {{Mise à jour des tarifs}}</legend>
-    <div class="form-group">
-      <label class="col-md-4 control-label">{{Tarifs appliqués}}
-      </label>
-      <div class="col-md-4">
-        <span class="label label-info" id="tarifsVersionLabel"><?php echo $tarifsDisplay; ?></span>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="col-md-4 control-label">{{URL fichier tarifs}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{URL du fichier JSON contenant les tarifs à jour}}"></i></sup>
-      </label>
-      <div class="col-md-4">
-        <input class="configKey form-control" data-l1key="global_url_tarifs_json" value="https://raw.githubusercontent.com/idoexp/edf_tempo/main/tarifs.json"/>
-      </div>
-    </div>
-    <div class="form-group">
-      <div class="col-md-offset-4 col-md-4">
-        <a class="btn btn-success" id="bt_checkTarifs"><i class="fas fa-search"></i> {{Vérifier les tarifs}}</a>
-        <a class="btn btn-warning" id="bt_dismissTarifs"><i class="fas fa-bell-slash"></i> {{Ignorer cette version}}</a>
-      </div>
-    </div>
-    <div id="tarifsCompareContainer" style="display:none;">
-      <div class="form-group">
-        <div class="col-md-offset-2 col-md-8">
-          <div id="tarifsCompareContent"></div>
-          <div style="margin-top:10px;">
-            <a class="btn btn-success" id="bt_applyTarifs" style="display:none;"><i class="fas fa-check"></i> {{Appliquer ces tarifs}}</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <legend><i class="fas fa-link"></i> {{URLs API EDF}}</legend>
-    <div class="form-group">
-      <label class="col-md-4 control-label">{{URL jours restant}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le lien direct vers la page des jours restant EDF}}"></i></sup>
-      </label>
-      <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_url_edf_restant" value="https://api-commerce.edf.fr/commerce/activet/v1/saisons/search?option=TEMPO"/>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label class="col-md-4 control-label">{{URL couleur du jour}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le lien direct vers la page indiquant la couleur du jour EDF}}"></i></sup>
-      </label>
-      <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_url_edf_color" value="https://api-commerce.edf.fr/commerce/activet/v1/calendrier-jours-effacement?option=TEMPO&amp;dateApplicationBorneInf="/>
-      </div>
-    </div>
-
     <legend><i class="fas fa-euro-sign"></i> {{Tarifs}}</legend>
     <div class="form-group">
+      <label class="col-md-4 control-label">{{Version des tarifs}}</label>
+      <div class="col-md-4">
+        <?php if ($tarifsVersion) {
+          $versionDate = DateTime::createFromFormat('Y-m-d', $tarifsVersion);
+          $versionLabel = $versionDate ? $versionDate->format('d/m/Y') : $tarifsVersion;
+        ?>
+          <span class="label label-primary" style="font-size:13px;"><?= $versionLabel ?></span>
+          <?php if ($tarifsDate) {
+            $dt = DateTime::createFromFormat('d-m-Y à H:i', $tarifsDate);
+            $formattedDate = $dt ? $dt->format('d/m/Y à H:i') : $tarifsDate;
+          ?>
+            <span class="label label-default" style="font-size:11px; margin-left:5px;">maj <?= $formattedDate ?></span>
+          <?php } ?>
+          <?php if ($tarifsSource) { ?>
+            <span class="label <?= (strpos($tarifsSource, 'API') !== false) ? 'label-info' : 'label-warning' ?>" style="font-size:11px; margin-left:5px;"><?= $tarifsSource ?></span>
+          <?php } ?>
+        <?php } else { ?>
+          <span class="label label-default" style="font-size:13px;">Non synchronisé</span>
+        <?php } ?>
+        <br><a class="btn btn-success btn-sm" id="bt_syncTarifs" style="margin-top:8px; margin-bottom:8px;"><i class="fas fa-sync-alt"></i> {{Synchroniser les prix depuis l'API}}</a>
+      </div>
+    </div>
+
+    <div class="form-group">
       <label class="col-md-4 control-label">{{Tarif Bleu HC}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en euros par kilowattheure}}"></i></sup>
+        <sup><i class="fas fa-question-circle tooltips" title="{{Prix en euros par kWh}}"></i></sup>
       </label>
       <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_tempo_bleu_hc" value="0.1296"/>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label class="col-md-4 control-label">{{Tarif Bleu HP}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en euros par kilowattheure}}"></i></sup>
-      </label>
-      <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_tempo_bleu_hp" value="0.1609"/>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label class="col-md-4 control-label">{{Tarif Blanc HC}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en euros par kilowattheure}}"></i></sup>
-      </label>
-      <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_tempo_blanc_hc" value="0.1486"/>
+        <input class="configKey form-control" data-l1key="global_tempo_bleu_hc"/>
       </div>
     </div>
     <div class="form-group">
-      <label class="col-md-4 control-label">{{Tarif Blanc HP}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en euros par kilowattheure}}"></i></sup>
-      </label>
+      <label class="col-md-4 control-label">{{Tarif Bleu HP}}</label>
       <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_tempo_blanc_hp" value="0.1894"/>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label class="col-md-4 control-label">{{Tarif Rouge HC}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en euros par kilowattheure}}"></i></sup>
-      </label>
-      <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_tempo_rouge_hc" value="0.1568"/>
+        <input class="configKey form-control" data-l1key="global_tempo_bleu_hp"/>
       </div>
     </div>
     <div class="form-group">
-      <label class="col-md-4 control-label">{{Tarif Rouge HP}}
-        <sup><i class="fas fa-question-circle tooltips" title="{{Indiquez le prix en euros par kilowattheure}}"></i></sup>
-      </label>
+      <label class="col-md-4 control-label">{{Tarif Blanc HC}}</label>
       <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_tempo_rouge_hp" value="0.7562"/>
+        <input class="configKey form-control" data-l1key="global_tempo_blanc_hc"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="col-md-4 control-label">{{Tarif Blanc HP}}</label>
+      <div class="col-md-4">
+        <input class="configKey form-control" data-l1key="global_tempo_blanc_hp"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="col-md-4 control-label">{{Tarif Rouge HC}}</label>
+      <div class="col-md-4">
+        <input class="configKey form-control" data-l1key="global_tempo_rouge_hc"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="col-md-4 control-label">{{Tarif Rouge HP}}</label>
+      <div class="col-md-4">
+        <input class="configKey form-control" data-l1key="global_tempo_rouge_hp"/>
       </div>
     </div>
 
     <legend><i class="fas fa-calendar-alt"></i> {{Jours maximum}}</legend>
     <div class="form-group">
-      <label class="col-md-4 control-label">{{Nombres max de jours bleus }}
-        <sup><i class="fas fa-question-circle tooltips" title="{{301 en cas d'année bisextile}}"></i></sup>
+      <label class="col-md-4 control-label">{{Jours bleus max}}
+        <sup><i class="fas fa-question-circle tooltips" title="{{301 en cas d'année bisextile — calculé automatiquement}}"></i></sup>
       </label>
       <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_max_tempo_bleu" value="0"/>
+        <input class="configKey form-control" data-l1key="global_max_tempo_bleu"/>
       </div>
     </div>
-
     <div class="form-group">
-      <label class="col-md-4 control-label">{{Nombres max de jours blancs }}
-      </label>
+      <label class="col-md-4 control-label">{{Jours blancs max}}</label>
       <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_max_tempo_blanc" value="43"/>
+        <input class="configKey form-control" data-l1key="global_max_tempo_blanc" value="43"/>
       </div>
     </div>
-
     <div class="form-group">
-      <label class="col-md-4 control-label">{{Nombres max de jours rouges }}
-      </label>
+      <label class="col-md-4 control-label">{{Jours rouges max}}</label>
       <div class="col-md-4">
-        <input class="configKey form-control"  data-l1key="global_max_tempo_rouge" value="22"/>
+        <input class="configKey form-control" data-l1key="global_max_tempo_rouge" value="22"/>
       </div>
     </div>
 
   </fieldset>
 </form>
 
-<script>
-var _remoteTarifsData = null;
+<div class="modal fade" id="md_tarifsCompare" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title"><i class="fas fa-exchange-alt"></i> {{Comparaison des tarifs}}</h4>
+      </div>
+      <div class="modal-body" id="tarifsCompareContent"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal"><i class="fas fa-times"></i> {{Annuler}}</button>
+        <button type="button" class="btn btn-success" id="bt_applyTarifs" style="display:none;"><i class="fas fa-check"></i> {{Appliquer ces tarifs}}</button>
+      </div>
+    </div>
+  </div>
+</div>
 
+<script>
 var tarifsLabels = {
-  'bleu_hc': 'Bleu HC',
-  'bleu_hp': 'Bleu HP',
-  'blanc_hc': 'Blanc HC',
-  'blanc_hp': 'Blanc HP',
-  'rouge_hc': 'Rouge HC',
-  'rouge_hp': 'Rouge HP'
+  'bleu_hc': 'Bleu HC', 'bleu_hp': 'Bleu HP',
+  'blanc_hc': 'Blanc HC', 'blanc_hp': 'Blanc HP',
+  'rouge_hc': 'Rouge HC', 'rouge_hp': 'Rouge HP'
 };
 
-$('#bt_checkTarifs').on('click', function() {
-  _remoteTarifsData = null;
+$('#bt_syncTarifs').on('click', function() {
+  var btn = $(this);
+  btn.prop('disabled', true).find('i').addClass('fa-spin');
   $('#bt_applyTarifs').hide();
-  $('#tarifsCompareContainer').hide();
-  $('#tarifsCompareContent').empty();
 
   $.ajax({
     type: 'POST',
     url: 'plugins/edf_tempo/core/ajax/edf_tempo.ajax.php',
-    data: {
-      action: 'fetchTarifs',
-      ajax: 1
-    },
+    data: { action: 'fetchTarifs', ajax: 1 },
     dataType: 'json',
     global: false,
     success: function(data) {
+      btn.prop('disabled', false).find('i').removeClass('fa-spin');
       if (data.state != 'ok') {
-        $('#tarifsCompareContent').html('<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ' + data.result + '</div>');
-        $('#tarifsCompareContainer').show();
+        $('#div_alert').showAlert({message: data.result, level: 'danger'});
         return;
       }
 
-      _remoteTarifsData = data.result;
       var remote = data.result.tarifs;
       var current = data.result.current;
       var label = data.result.label || data.result.version;
 
-      var html = '<h4><i class="fas fa-exchange-alt"></i> Comparaison des tarifs — ' + label + '</h4>';
-      html += '<table class="table table-bordered table-striped" style="max-width:600px;">';
-      html += '<thead><tr><th>Créneau</th><th>Avant</th><th></th><th>Après</th></tr></thead>';
+      var html = '<h4>' + label + '</h4>';
+      html += '<table class="table table-bordered table-striped">';
+      html += '<thead><tr><th>{{Créneau}}</th><th>{{Actuel}}</th><th></th><th>{{Nouveau}}</th></tr></thead>';
       html += '<tbody>';
 
       var hasChange = false;
@@ -225,64 +173,72 @@ $('#bt_checkTarifs').on('click', function() {
         var apres = remote[key] || '—';
         var changed = (avant !== apres);
         if (changed) hasChange = true;
-        var rowClass = changed ? ' style="font-weight:bold;"' : '';
-        var arrow = changed ? '<i class="fas fa-arrow-right" style="color:#e67e22;"></i>' : '<i class="fas fa-equals" style="color:#95a5a6;"></i>';
-        html += '<tr' + rowClass + '>';
+        var rowStyle = changed ? ' style="font-weight:bold;"' : '';
+        var arrow;
+        if (!changed) {
+          arrow = '<i class="fas fa-equals" style="color:#95a5a6;"></i>';
+        } else {
+          var avantNum = parseFloat(String(avant).replace(/[^0-9.,]/g, '').replace(',', '.'));
+          var apresNum = parseFloat(String(apres).replace(/[^0-9.,]/g, '').replace(',', '.'));
+          if (apresNum > avantNum) {
+            arrow = '<i class="fas fa-arrow-up" style="color:#e74c3c;"></i>';
+          } else {
+            arrow = '<i class="fas fa-arrow-down" style="color:#27ae60;"></i>';
+          }
+        }
+        html += '<tr' + rowStyle + '>';
         html += '<td>' + tarifsLabels[key] + '</td>';
         html += '<td>' + avant + '</td>';
         html += '<td style="text-align:center;">' + arrow + '</td>';
         html += '<td>' + apres + '</td>';
         html += '</tr>';
       }
-
       html += '</tbody></table>';
 
       if (!hasChange) {
-        html += '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Les tarifs sont déjà à jour.</div>';
+        html += '<div class="alert alert-info"><i class="fas fa-info-circle"></i> {{Les tarifs sont déjà à jour.}}</div>';
       }
 
       $('#tarifsCompareContent').html(html);
-      $('#tarifsCompareContainer').show();
-
       if (hasChange) {
         $('#bt_applyTarifs').show();
       }
+      $('#md_tarifsCompare').modal('show');
     },
     error: function() {
-      $('#tarifsCompareContent').html('<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Impossible de récupérer les tarifs distants.</div>');
-      $('#tarifsCompareContainer').show();
+      btn.prop('disabled', false).find('i').removeClass('fa-spin');
+      $('#div_alert').showAlert({message: '{{Impossible de récupérer les tarifs distants.}}', level: 'danger'});
     }
   });
 });
 
 $('#bt_applyTarifs').on('click', function() {
-  if (!_remoteTarifsData) return;
-  var label = _remoteTarifsData.label || _remoteTarifsData.version;
-
+  var btn = $(this);
+  btn.prop('disabled', true);
   $.ajax({
     type: 'POST',
     url: 'plugins/edf_tempo/core/ajax/edf_tempo.ajax.php',
-    data: {
-      action: 'updateTarifs',
-      ajax: 1
-    },
+    data: { action: 'applyTarifs', ajax: 1 },
     dataType: 'json',
     global: false,
     success: function(data) {
       if (data.state != 'ok') {
+        btn.prop('disabled', false);
         $('#div_alert').showAlert({message: data.result, level: 'danger'});
         return;
       }
-      $('#div_alert').showAlert({message: 'Tarifs mis à jour avec succès (' + label + ')', level: 'success'});
+      $('#md_tarifsCompare').modal('hide');
+      $('#div_alert').showAlert({message: '{{Tarifs synchronisés avec succès.}}', level: 'success'});
       setTimeout(function() { location.reload(); }, 1500);
     },
     error: function() {
-      $('#div_alert').showAlert({message: 'Erreur lors de l\'application des tarifs.', level: 'danger'});
+      btn.prop('disabled', false);
+      $('#div_alert').showAlert({message: '{{Erreur lors de l\'application des tarifs.}}', level: 'danger'});
     }
   });
 });
 
-// Fonction appelée automatiquement par Jeedom après la sauvegarde de la config plugin
+// Appelé automatiquement par Jeedom après sauvegarde manuelle de la config
 function edf_tempo_postSaveConfiguration() {
   $.ajax({
     type: 'POST',
@@ -293,27 +249,4 @@ function edf_tempo_postSaveConfiguration() {
     async: false
   });
 }
-
-$('#bt_dismissTarifs').on('click', function() {
-  $.ajax({
-    type: 'POST',
-    url: 'plugins/edf_tempo/core/ajax/edf_tempo.ajax.php',
-    data: {
-      action: 'dismissTarifs',
-      ajax: 1
-    },
-    dataType: 'json',
-    global: false,
-    success: function(data) {
-      if (data.state != 'ok') {
-        $('#div_alert').showAlert({message: data.result, level: 'danger'});
-        return;
-      }
-      $('#div_alert').showAlert({message: 'Notification de mise à jour ignorée pour cette version.', level: 'success'});
-    },
-    error: function() {
-      $('#div_alert').showAlert({message: 'Erreur lors de l\'opération.', level: 'danger'});
-    }
-  });
-});
 </script>
