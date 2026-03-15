@@ -23,30 +23,53 @@ try {
         throw new Exception(__('401 - Accès non autorisé', __FILE__));
     }
 
-  /* Fonction permettant l'envoi de l'entête 'Content-Type: application/json'
-    En V3 : indiquer l'argument 'true' pour contrôler le token d'accès Jeedom
-    En V4 : autoriser l'exécution d'une méthode 'action' en GET en indiquant le(s) nom(s) de(s) action(s) dans un tableau en argument
-  */
     ajax::init();
 
     if (init('action') == 'fetchTarifs') {
-      $result = edf_tempo::fetchRemoteTarifs();
-      ajax::success($result);
+      $tarifs = edf_tempo::callApi('tarifs');
+      if (!$tarifs || !isset($tarifs['tarifs'])) {
+        throw new Exception(__('Impossible de récupérer les tarifs depuis l\'API.', __FILE__));
+      }
+      $tarifs['current'] = array(
+        'bleu_hc'  => config::byKey('global_tempo_bleu_hc', 'edf_tempo'),
+        'bleu_hp'  => config::byKey('global_tempo_bleu_hp', 'edf_tempo'),
+        'blanc_hc' => config::byKey('global_tempo_blanc_hc', 'edf_tempo'),
+        'blanc_hp' => config::byKey('global_tempo_blanc_hp', 'edf_tempo'),
+        'rouge_hc' => config::byKey('global_tempo_rouge_hc', 'edf_tempo'),
+        'rouge_hp' => config::byKey('global_tempo_rouge_hp', 'edf_tempo'),
+      );
+      ajax::success($tarifs);
     }
 
-    if (init('action') == 'updateTarifs') {
-      $result = edf_tempo::applyRemoteTarifs();
-      ajax::success($result);
-    }
-
-    if (init('action') == 'dismissTarifs') {
-      edf_tempo::dismissRemoteTarifs();
+    if (init('action') == 'applyTarifs') {
+      $tarifs = edf_tempo::callApi('tarifs');
+      if (!$tarifs || !isset($tarifs['tarifs'])) {
+        throw new Exception(__('Impossible de récupérer les tarifs depuis l\'API.', __FILE__));
+      }
+      config::save('global_tempo_bleu_hc', $tarifs['tarifs']['bleu_hc'], 'edf_tempo');
+      config::save('global_tempo_bleu_hp', $tarifs['tarifs']['bleu_hp'], 'edf_tempo');
+      config::save('global_tempo_blanc_hc', $tarifs['tarifs']['blanc_hc'], 'edf_tempo');
+      config::save('global_tempo_blanc_hp', $tarifs['tarifs']['blanc_hp'], 'edf_tempo');
+      config::save('global_tempo_rouge_hc', $tarifs['tarifs']['rouge_hc'], 'edf_tempo');
+      config::save('global_tempo_rouge_hp', $tarifs['tarifs']['rouge_hp'], 'edf_tempo');
+      config::save('global_tarifs_version', $tarifs['version'] ?? '', 'edf_tempo');
+      config::save('global_tarifs_update_date', date('d-m-Y à H:i'), 'edf_tempo');
+      config::save('global_tarifs_update_source', 'Synchronisé depuis l\'API', 'edf_tempo');
+      log::add('edf_tempo', 'info', "Tarifs appliqués : " . ($tarifs['label'] ?? $tarifs['version'] ?? ''));
       ajax::success();
+    }
+
+    if (init('action') == 'getCalendar') {
+      $calendar = edf_tempo::callApi('calendar');
+      if (!$calendar || !isset($calendar['colors'])) {
+        throw new Exception(__('Impossible de récupérer le calendrier depuis l\'API.', __FILE__));
+      }
+      ajax::success($calendar);
     }
 
     if (init('action') == 'markTarifsManual') {
       config::save('global_tarifs_update_date', date('d-m-Y à H:i'), 'edf_tempo');
-      config::save('global_tarifs_update_source', 'Manuel par l\'utilisateur', 'edf_tempo');
+      config::save('global_tarifs_update_source', 'Modifié manuellement', 'edf_tempo');
       log::add('edf_tempo', 'info', "Tarifs modifiés manuellement le " . date('d-m-Y à H:i'));
       ajax::success();
     }

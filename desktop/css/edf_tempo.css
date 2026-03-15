@@ -70,3 +70,11 @@
   background-color: grey;
   margin: 4px;
 }
+div.eqLogic-widget .edf-calendar-btn {
+  margin-top: 5px;
+}
+div.eqLogic-widget .edf-calendar-btn i {
+  color: var(--eqTitle-color) !important;
+  font-size: 12px !important;
+  cursor: pointer;
+}

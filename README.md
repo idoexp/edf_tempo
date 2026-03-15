@@ -22,8 +22,9 @@ Ou téléchargez le zip et copiez son contenu dans le dossier **/var/www/html/pl
 
 L'équipement est créé et actif, il vous reste à le positionner dans votre environnement (par défaut dans la rubrique **aucun**).
 
-Le site d'EDF est mis à jour tous les jours vers 11h. Une tâche planifiée vérifie quotidiennement à 11h le statut du jour. En cas d'échec, le plugin effectue automatiquement jusqu'à 3 tentatives supplémentaires (à +3min, +6min et +9min). Si toutes les tentatives échouent, une erreur est logguée.
-Si vous voulez planifier des scénarios en fonction de la couleur du jour (par exemple une alerte mail), faites-le après 11h15 de manière à avoir la dernière information.
+Le plugin récupère automatiquement les couleurs du jour et du lendemain entre **11h00 et 11h30**. EDF publie généralement la couleur du lendemain vers 11h05-11h06. Le plugin retente chaque minute jusqu'à obtenir la donnée. Si après 30 minutes la couleur est toujours indisponible, une erreur est logguée.
+
+> **Important** : si vous planifiez des scénarios en fonction de la couleur du jour (alerte mail, pilotage chauffage, etc.), programmez-les **à partir de 11h10 minimum** pour être sûr que les données sont disponibles.
 
 # Gestion des tarifs
 
@@ -45,7 +46,9 @@ Le plugin vérifie également chaque jour si de nouveaux tarifs sont disponibles
   - Correction du template mobile (jours max blanc/rouge dynamiques)
   - Amélioration des logs (niveaux, messages, format de date)
   - Factorisation du code cURL pour les appels distants
-  - Système de retry automatique (3 tentatives à +3min, +6min, +9min) en cas d'échec de synchronisation
+  - Système de retry automatique chaque minute entre 11h00 et 11h30
+  - Optimisation des appels API : ne requête que les données manquantes lors des retries
+  - Les erreurs HTTP 404 attendues (couleur pas encore publiée par EDF) ne polluent plus les logs
 
 * Mise à jour du 3 Février 2025.
   - Mise à jour des tarifs TEMPO pour l'année 2025
