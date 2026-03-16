@@ -37,6 +37,14 @@ Le plugin vérifie également chaque jour si de nouveaux tarifs sont disponibles
 
 # Changelog
 
+* Mise à jour du 15 Mars 2026.
+  - Optimisation des appels API : ne requête que les données manquantes lors des retries
+  - Les erreurs HTTP 404 attendues (couleur pas encore publiée par EDF) ne polluent plus les logs
+  - Système de retry automatique chaque minute entre 11h00 et 11h30
+  - Correction bug ordre des commandes dans postSave ($info/$refresh)
+  - Correction format de date dans le log du refresh forcé
+  - Documentation : planifier les scénarios à partir de 11h10 minimum
+
 * Mise à jour du 8 Mars 2026.
   - Système de mise à jour des tarifs via fichier JSON distant (GitHub)
   - Tableau comparatif avant/après dans la configuration du plugin
@@ -46,9 +54,12 @@ Le plugin vérifie également chaque jour si de nouveaux tarifs sont disponibles
   - Correction du template mobile (jours max blanc/rouge dynamiques)
   - Amélioration des logs (niveaux, messages, format de date)
   - Factorisation du code cURL pour les appels distants
+<<<<<<< HEAD
   - Système de retry automatique chaque minute entre 11h00 et 11h30
   - Optimisation des appels API : ne requête que les données manquantes lors des retries
   - Les erreurs HTTP 404 attendues (couleur pas encore publiée par EDF) ne polluent plus les logs
+=======
+>>>>>>> beta
 
 * Mise à jour du 3 Février 2025.
   - Mise à jour des tarifs TEMPO pour l'année 2025
