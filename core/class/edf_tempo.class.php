@@ -325,9 +325,9 @@ class edf_tempo extends eqLogic {
     $hmacSecret = config::byKey('global_api_hmac_secret', 'edf_tempo');
     $pluginId  = 'edf_tempo';
     $timestamp = (string)time();
-    $jeedomHash = jeedom::getHardwareKey();
+    $installId = config::byKey('global_install_id', 'edf_tempo');
 
-    $signature = hash_hmac('sha256', $pluginId . $timestamp . $jeedomHash, $hmacSecret);
+    $signature = hash_hmac('sha256', $pluginId . $timestamp . $installId, $hmacSecret);
 
     $url = rtrim($baseUrl, '/') . '/' . $endpoint;
     if (!empty($params)) {
@@ -345,7 +345,7 @@ class edf_tempo extends eqLogic {
         'Accept: application/json',
         'X-Plugin-Id: ' . $pluginId,
         'X-Timestamp: ' . $timestamp,
-        'X-Jeedom-Hash: ' . $jeedomHash,
+        'X-Install-Id: ' . $installId,
         'X-Signature: ' . $signature,
       ],
     ]);

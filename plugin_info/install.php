@@ -24,6 +24,7 @@ function edf_tempo_install() {
 	config::save('global_api_hmac_secret', 'da1029121617019c3f464e8bea4f8ae196ff3b0e7b27cc961eefd1fa0a1523ce', 'edf_tempo');
 	config::save('global_max_tempo_blanc', 43, 'edf_tempo');
 	config::save('global_max_tempo_rouge', 22, 'edf_tempo');
+	config::save('global_install_id', bin2hex(random_bytes(16)), 'edf_tempo');
 	log::add('edf_tempo', 'info', "Installation du plugin. Les tarifs seront synchronisés au premier rafraîchissement.");
 }
 
@@ -36,6 +37,9 @@ function edf_tempo_update() {
 	}
 	if (config::byKey('global_api_hmac_secret', 'edf_tempo') == '') {
 		config::save('global_api_hmac_secret', 'da1029121617019c3f464e8bea4f8ae196ff3b0e7b27cc961eefd1fa0a1523ce', 'edf_tempo');
+	}
+	if (config::byKey('global_install_id', 'edf_tempo') == '') {
+		config::save('global_install_id', bin2hex(random_bytes(16)), 'edf_tempo');
 	}
 	log::add('edf_tempo', 'info', "Mise à jour du plugin edf_tempo.");
 }

@@ -37,6 +37,10 @@ Le plugin vérifie également chaque jour si de nouveaux tarifs sont disponibles
 
 # Changelog
 
+* Mise à jour du 6 Avril 2026.
+  - **Sécurité** : suppression de l'utilisation de la clé matérielle Jeedom (`hardwareKey`) pour l'authentification API. Je vous prie de m'excuser d'avoir utilisé cette donnée privée dans les versions précédentes sans votre consentement. La base de données côté serveur a été purgée de toutes les clés matérielles collectées.
+  - Un identifiant d'installation unique est désormais généré localement lors de l'installation ou de la mise à jour du plugin, et utilisé pour authentifier les requêtes auprès de l'API. Cela garantit que seules les installations du plugin peuvent interroger le endpoint, sans exposer de donnée sensible.
+
 * Mise à jour du 15 Mars 2026.
   - Optimisation des appels API : ne requête que les données manquantes lors des retries
   - Les erreurs HTTP 404 attendues (couleur pas encore publiée par EDF) ne polluent plus les logs
@@ -54,12 +58,6 @@ Le plugin vérifie également chaque jour si de nouveaux tarifs sont disponibles
   - Correction du template mobile (jours max blanc/rouge dynamiques)
   - Amélioration des logs (niveaux, messages, format de date)
   - Factorisation du code cURL pour les appels distants
-<<<<<<< HEAD
-  - Système de retry automatique chaque minute entre 11h00 et 11h30
-  - Optimisation des appels API : ne requête que les données manquantes lors des retries
-  - Les erreurs HTTP 404 attendues (couleur pas encore publiée par EDF) ne polluent plus les logs
-=======
->>>>>>> beta
 
 * Mise à jour du 3 Février 2025.
   - Mise à jour des tarifs TEMPO pour l'année 2025
