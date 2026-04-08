@@ -35,7 +35,28 @@ Le plugin propose deux modes de gestion des tarifs :
 
 Le plugin vérifie également chaque jour si de nouveaux tarifs sont disponibles et vous notifie via un log de niveau warning. Vous pouvez ignorer une version de tarifs via le bouton **Ignorer cette version**.
 
+# Données personnelles et confidentialité (RGPD)
+
+Ce plugin effectue des requêtes HTTP vers un serveur intermédiaire (`ai-beauvaisis.fr`) qui relaie les données de l'API EDF. Ce serveur est opéré par l'auteur du plugin.
+
+**Ce que le plugin transmet :**
+- Un identifiant d'installation unique, généré aléatoirement sur votre Jeedom lors de l'installation du plugin. Cet identifiant est un hash irréversible qui ne contient aucune information personnelle. Il sert uniquement à vérifier que la requête provient bien d'une installation Jeedom utilisant ce plugin, afin d'éviter tout accès non autorisé au endpoint.
+- Votre adresse IP est techniquement exposée lors de la requête HTTP, comme pour toute connexion internet. C'est un fonctionnement inhérent au protocole HTTP.
+
+**Ce que je m'engage à ne pas faire :**
+- Aucune adresse IP n'est stockée ni conservée sur le serveur.
+- Aucune donnée permettant d'identifier un utilisateur n'est collectée, stockée ou exploitée.
+- Aucun tracking, aucun profilage, aucune revente de données.
+- Le serveur ne sert qu'à relayer les données EDF et ne conserve aucune donnée personnelle.
+
+En installant ce plugin, vous acceptez que des requêtes soient effectuées vers `ai-beauvaisis.fr` dans le seul but de récupérer les données Tempo. Pour toute question, vous pouvez me contacter via le [forum Jeedom](https://community.jeedom.com/t/edf-tempo-connaitre-la-couleur-du-jour-de-demain/110520).
+
 # Changelog
+
+* Mise à jour du 8 Avril 2026.
+  - Ajout d'une section « Données personnelles et confidentialité (RGPD) » dans la documentation
+  - Mise à jour de la description et des conditions d'utilisation du plugin sur le market
+  - Transparence sur les requêtes externes vers ai-beauvaisis.fr et la méthode d'authentification
 
 * Mise à jour du 6 Avril 2026.
   - **Sécurité** : suppression de l'utilisation de la clé matérielle Jeedom (`hardwareKey`) pour l'authentification API. Je vous prie de m'excuser d'avoir utilisé cette donnée privée dans les versions précédentes sans votre consentement. La base de données côté serveur a été purgée de toutes les clés matérielles collectées.
